@@ -4,14 +4,14 @@ POST /token HTTP/1.1
 Host: server.example.com
 Authorization: Basic czZCaGRSa3F0MzpnWDFmQmF0M2JW
 Content-Type: application/x-www-form-urlencoded
-Content-Digest: sha-256=:4fEzRVTGqfZg7lqf/d3oxXu837pvb3L0GN24+F1VkZk=:
+Content-Digest: sha-256=:4fEzRVTGqfZg7lqf/d3oxXu837pvb3L0GN24+F\
+  1VkZk=:
 Signature-Input: sig1=("@method" "@target-uri" "content-digest" \
-  "authorization");created=1618884473;keyid="j-0Ny45NWmqGq6G4UxLjGjNu\
-  loktugtOW4jfGCCgefQ";alg="ed25519";nonce="b3k2pp5k7z-50gnX1b06"\
-  ;tag="httpsig-oauth-token-request";pub_key_a=:iuemcj/GhRHmY/yCsMlDN\
-  p3BQgPZDdG00VRsg/BgU3s=:
-Signature: sig1=:ikilCUkL+BjDRXdC7m4eNgU/4dQtijp4BTgehqYRxJX+sPr394dx\
-  qGAPzV99eUVDhN1cgAk2VFXvN2pNfpFTBA==:
+  "authorization");created=1618884473;alg="ed25519"\
+  ;nonce="b3k2pp5k7z-50gnX1b06";tag="httpsig-oauth-token-request"\
+  ;pub=:iuemcj/GhRHmY/yCsMlDNp3BQgPZDdG00VRsg/BgU3s=:
+Signature: sig1=:W1jjnCpI59MI13gajmWP9DViwQHXhQdQ8r8q+h+Drp2JbJyu/md\
+  QrMMkGuiMvkWWY/noYbi9L4cW/lTOZigsCQ==:
 
-grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA&redirect_ur\
-  i=https%3A%2F%2Fclient%2Eexample%2Ecom%2Fcb
+grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA&redirect_u\
+  ri=https%3A%2F%2Fclient%2Eexample%2Ecom%2Fcb

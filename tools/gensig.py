@@ -70,7 +70,8 @@ def _wrap_at_column(text: str, max_len: int) -> str:
     indent = CONTINUATION_INDENT
     lines = []
     while len(text) > max_len:
-        bp = _adjust_for_short_tail(max_len, text)
+        # -1 leaves room for the trailing "\" that joins the fold
+        bp = _adjust_for_short_tail(max_len - 1, text)
         if bp >= len(text):
             break  # single trailing character: don't break
         lines.append(text[:bp])
@@ -142,7 +143,8 @@ def wrap_structured_field(line: str, max_len: int = 69) -> str:
     indent = CONTINUATION_INDENT
     parts = []
     while len(line) > max_len:
-        bp = _adjust_for_short_tail(_find_structured_break(line, max_len), line)
+        # -1 leaves room for the trailing "\" that joins the fold
+        bp = _adjust_for_short_tail(_find_structured_break(line, max_len - 1), line)
         if bp >= len(line):
             break  # single trailing character: don't break
         parts.append(line[:bp])
@@ -479,30 +481,23 @@ def parse_http_request(text: str) -> HTTPRequest:
 # ---------------------------------------------------------------------------
 
 def runtime_key_params(public_pem: bytes, algorithm: type) -> "collections.OrderedDict":
-    """Map a public key into HTTP Message Signature parameters per {#embed-keys}.
+    """Map a public key into the `pub` signature parameter per {#embed-keys}.
 
     Returns an OrderedDict of parameter name -> bytes (serialized as a Byte
-    Sequence by http_sfv). Covers EC (pub_key_x/pub_key_y), Ed25519
-    (pub_key_a), and RSA (pub_key_n/pub_key_e).
+    Sequence by http_sfv). EC keys use the SEC1 uncompressed point form
+    (0x04 || X || Y); Ed25519 uses the raw 32-octet public key A. RSA is out
+    of scope for the inline representation.
     """
-    from cryptography.hazmat.primitives.asymmetric import ec, ed25519, rsa
+    from cryptography.hazmat.primitives.asymmetric import ec, ed25519
 
     pub = load_pem_public_key(public_pem)
     params: "collections.OrderedDict[str, bytes]" = collections.OrderedDict()
 
-    if algorithm in (sig_algorithms.ECDSA_P256_SHA256,) or isinstance(pub, ec.EllipticCurvePublicKey):
-        numbers = pub.public_numbers()
-        size = (pub.curve.key_size + 7) // 8
-        params["pub_key_x"] = numbers.x.to_bytes(size, "big")
-        params["pub_key_y"] = numbers.y.to_bytes(size, "big")
+    if isinstance(pub, ec.EllipticCurvePublicKey):
+        params["pub"] = pub.public_bytes(Encoding.X962,
+                                         PublicFormat.UncompressedPoint)
     elif isinstance(pub, ed25519.Ed25519PublicKey):
-        params["pub_key_a"] = pub.public_bytes(Encoding.Raw, PublicFormat.Raw)
-    elif isinstance(pub, rsa.RSAPublicKey):
-        numbers = pub.public_numbers()
-        n_len = (numbers.n.bit_length() + 7) // 8
-        e_len = (numbers.e.bit_length() + 7) // 8
-        params["pub_key_n"] = numbers.n.to_bytes(n_len, "big")
-        params["pub_key_e"] = numbers.e.to_bytes(e_len, "big")
+        params["pub"] = pub.public_bytes(Encoding.Raw, PublicFormat.Raw)
     else:
         raise ValueError(f"Cannot embed public key of type {type(pub).__name__}")
 
@@ -515,6 +510,10 @@ class InspectableSigner(HTTPMessageSigner):
     If ``extra_params`` is set, those parameters are merged into every
     signature's parameters so they appear in Signature-Input and are covered
     by the signature base (used for runtime public-key embedding).
+
+    If ``drop_keyid`` is set, the keyid parameter the library always emits is
+    removed. The draft omits keyid for runtime key introduction and for token
+    presentation.
     """
 
     def __init__(self, *args, **kwargs):
@@ -522,8 +521,11 @@ class InspectableSigner(HTTPMessageSigner):
         self.last_sig_base: Optional[str] = None
         self.last_sig_elements: Optional[dict] = None
         self.extra_params: Optional[dict] = None
+        self.drop_keyid: bool = False
 
     def _build_signature_base(self, message, *, covered_component_ids, signature_params):
+        if self.drop_keyid:
+            signature_params.pop("keyid", None)
         if self.extra_params:
             signature_params.update(self.extra_params)
         result = super()._build_signature_base(
@@ -637,9 +639,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--include-alg-param", action="store_true",
                    help="Include the 'alg' parameter in Signature-Input")
     p.add_argument("--runtime-key", action="store_true",
-                   help="Embed the public key as signature parameters per the "
-                        "draft's Embedding a Public Key Value section "
-                        "(pub_key_*). Implies --include-alg-param.")
+                   help="Embed the public key in the 'pub' signature parameter "
+                        "per the draft's Embedding a Public Key Value section. "
+                        "Implies --include-alg-param and --no-keyid.")
+    p.add_argument("--no-keyid", action="store_true",
+                   help="Omit the 'keyid' parameter from Signature-Input")
     p.add_argument("--output", "-o", type=Path, default=None,
                    help="Output file (default: stdout)")
     p.add_argument("--width", "-w", type=int, default=69,
@@ -692,6 +696,11 @@ def main() -> None:
         signature_algorithm=key.algorithm,
         key_resolver=key.as_resolver(),
     )
+
+    # The draft omits keyid whenever the key is not identified by reference:
+    # runtime key introduction carries pub instead, and presentation to the RS
+    # relies on the access token binding.
+    signer.drop_keyid = args.no_keyid or args.runtime_key
 
     if args.runtime_key:
         if key.public_pem is None:

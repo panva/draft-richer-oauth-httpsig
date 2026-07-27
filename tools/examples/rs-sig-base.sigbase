@@ -4,5 +4,5 @@ NOTE: '\' line wrapping per RFC 8792
 "@target-uri": https://example.com/foo
 "authorization": HTTPSig 2340897.34j123-134uh2345n
 "@signature-params": ("@method" "@target-uri" "authorization")\
-  ;created=1776650875;keyid="test-key-ecdsa-p256"\
-  ;nonce="k9Jyxempel2305Nmx7Rk";tag="httpsig-oauth"
+  ;created=1776650875;nonce="k9Jyxempel2305Nmx7Rk"\
+  ;tag="httpsig-oauth"

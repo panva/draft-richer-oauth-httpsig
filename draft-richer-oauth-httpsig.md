@@ -37,20 +37,23 @@ author:
 normative:
     BCP195:
     DIGEST: RFC9530
-    HTTP: RFC9111
-    JWK: RFC7517
     OAUTH: RFC6749
-    OAUTH-BEARER: RFC6750
     STRUCTURED: RFC9651
     MTLS: RFC8705
     HTTPSIG: RFC9421
     DPOP: RFC9449
-    RAR: RFC9636
     PAR: RFC9126
     DYNREG: RFC7591
-    JSON: RFC8259
     HTTPAUTH: RFC7235
     RFC8032:
+    RFC9964:
+    SEC1:
+        target: https://www.secg.org/sec1-v2.pdf
+        title: "SEC 1: Elliptic Curve Cryptography"
+        author:
+            org: Certicom Research
+        date: 2009-05
+        refcontent: "Standards for Efficient Cryptography, Version 2.0"
 
 informative:
     I-D.ietf-oauth-signed-http-request:
@@ -110,9 +113,9 @@ A client pre-registering its keys for {{HTTPSIG}} binding MUST include the key i
 
 \[\[ Editor's note: do we want to have a client field for the signing alg or just leave that to the key all the time? I prefer to keep it in the key. \]\]
 
-A pre-registered key MAY be a shared secret (such as for use in an HMAC signature), but public key cryptography is RECOMMENDED.
+A pre-registered key MUST be an asymmetric key, and the registered JWK MUST be its public key. A shared secret MUST NOT be used to bind an access token; see {{Security}}.
 
-If the key is pre-registered, the signature algorithm MUST be derived from the indicated key and the `alg` signature parameter MUST NOT be used.
+If the key is pre-registered, the signature algorithm MUST be derived from the indicated key. The client MUST NOT include the `alg` or `pub` signature parameters.
 
 Note that pre-registration can occur statically or dynamically (such as by using {{DYNREG}}), as long as the key is associated with the client's `client_id` before the token request is made.
 
@@ -147,9 +150,10 @@ Instead of pre-registering a key, a client can introduce its key during the toke
 
 To use this mode, the client MUST:
 
-* Include the `alg` signature parameter with a valid value from the HTTP Message Signatures Algorithms Registry indicating an asymmetric signature algorithm.
-* Include its public key in the key type specific parameters as described in {{embed-keys}}.
-* Include the `keyid` signature parameter uniquely identifying the key.
+* Include the `alg` signature parameter with a value from the "HTTP Signature Algorithms" registry, indicating an asymmetric signature algorithm for which this document defines a public key encoding in {{embed-keys}}.
+* Include its public key in the `pub` signature parameter as described in {{embed-keys}}.
+
+The client MUST NOT include the `keyid` signature parameter.
 
 The included key MUST be appropriate for the indicated algorithm.
 
@@ -184,9 +188,9 @@ The signature MUST include the following parameters:
 - `created` a timestamp for signature creation; this MUST be within a small number of seconds of issuance (e.g. 30 seconds to account for clock skew)
 - `nonce` a random unique value that the AS can use to prevent signature replay within the small validity time window
 - `tag` a string indicating that this is being used for requesting a bound token, MUST be the value "httpsig-oauth-token-request"
-- `keyid` the identifier for the key to be used for binding the token (matching `kid` in the token); if client uses pre-registered keys as in {{preregister}}, the value MUST match the `httpsig_bound_access_token_kid` value
+- `keyid` the identifier for the key to be used for binding the token; this parameter is included only if the client uses pre-registered keys as in {{preregister}}, in which case the value MUST match the `httpsig_bound_access_token_kid` value
 
-Additionally, if the key is presented at runtime, the parameters and public key MUST be included as signature parameters as defined in {{runtime}}.
+Additionally, if the key is presented at runtime, the `alg` and `pub` signature parameters MUST be included as defined in {{runtime}}.
 
 An example request to the token endpoint (using a runtime-provided key here) can look like the following:
 
@@ -196,31 +200,27 @@ An example request to the token endpoint (using a runtime-provided key here) can
 
 # Embedding a Public Key Value {#embed-keys}
 
-When encoding a public key value in a runtime request as in {{runtime}}, the client includes the public key material appropriate to the signature algorithm being used.
+When encoding a public key value in a runtime request as in {{runtime}}, the client includes the public key material in the `pub` signature parameter attached to the signature input, encoded as a Byte Sequence as defined in {{STRUCTURED}}.
 
-## Elliptic Curve
+The contents of the `pub` parameter are the public key material appropriate to the signature algorithm indicated by the `alg` signature parameter, as defined in the following sections.
 
-If the `alg` value is `ecdsa-p256-sha256` or `ecdsa-p384-sha384`, the public key is encoded in two additional signature parameters and values attached to the signature input:
+## ECDSA
 
-- `pub_key_x`: the big-endian encoded, zero-padded bytes of the key's X value, encoded as a Byte Sequence
-- `pub_key_y`: the big-endian encoded, zero-padded bytes of the key's Y value, encoded as a Byte Sequence
+If the `alg` value is `ecdsa-p256-sha256` or `ecdsa-p384-sha384`, the `pub` parameter contains the uncompressed point representation of the public key: the single octet `0x04` followed by the big-endian, zero-padded, fixed-length encodings of the key's X and Y coordinates. This is the output of the Elliptic-Curve-Point-to-Octet-String Conversion in Section 2.3.3 of {{SEC1}} with point compression off.
 
-For `ecdsa-p256-sha256`, the key values are padded to exactly 32 bytes each. For `ecdsa-p384-sha384`, the key values are padded to exactly 48 bytes each.
+For `ecdsa-p256-sha256`, the X and Y values are exactly 32 octets each and the `pub` value is exactly 65 octets. For `ecdsa-p384-sha384`, the X and Y values are exactly 48 octets each and the `pub` value is exactly 97 octets.
 
-## Edwards Elliptic Curve
+## Ed25519
 
-If the `alg` value is `ed25519`, the public key is encoded in one additional signature parameter and value attached to the signature input:
+If the `alg` value is `ed25519`, the `pub` parameter contains the Ed25519 public key `A`, which is the encoding of the point `[s]B` as specified in {{Section 5.1.5 of RFC8032}}.
 
-- `pub_key_a`: the little-endian encoded compressed Edwards point defined in {{RFC8032}}, encoded as a Byte Sequence
+The key value is exactly 32 octets in length.
 
-The key value is exactly 32 bytes in length.
+## ML-DSA
 
-## RSA
+If the `alg` value indicates an ML-DSA algorithm, the `pub` parameter contains the ML-DSA public key, using the same encoding as the `pub` parameter of an AKP JSON Web Key defined in {{Section 3 of RFC9964}}, prior to its base64url encoding.
 
-If the `alg` value is `rsa-pss-sha512` or `rsa-v1_5-sha256`, the public key is encoded in two additional signature parameters and values attached to the signature input:
-
-- `pub_key_n`: the big-endian encoded unsigned modulus of the key (no sign byte and no leading 0x00 octet), encoded as a Byte Sequence
-- `pub_key_e`: the big-endian encoded exponent of the key, encoded as a Byte Sequence
+\[\[ Editor's note: ML-DSA algorithm identifiers for use with {{HTTPSIG}} are being defined in separate work; a reference will be added here once that document is available. \]\]
 
 # Issuing an HTTP Message Signature Bound Access Token {#issuing}
 
@@ -228,7 +228,9 @@ The AS MUST validate the signature of the token request sent in {{request}} agai
 
 The request MUST fail with an error if any of the following occur:
 
-- The key named in `kid` cannot be found or is not associated with the requesting client
+- The client uses pre-registered keys as in {{preregister}} and the key named in `keyid` cannot be found or is not associated with the requesting client
+- The client uses pre-registered keys as in {{preregister}} and the `alg` or `pub` parameter is present
+- The client introduces its key at runtime as in {{runtime}} and the `keyid` parameter is present
 - There is more than one signature with the tag "httpsig-oauth-token-request"
 - The `created` value of the signature is too far in the past
 - The `nonce` value is used more than once within the validity window of the signature
@@ -290,9 +292,8 @@ The signature MUST include the following parameters:
 - `created` a timestamp for signature creation; this MUST be within a small number of seconds of issuance (e.g. 30 seconds to account for clock skew)
 - `nonce` a random unique value that the AS can use to prevent signature replay within the small validity time window
 - `tag` a string indicating that this is being used for requesting a bound token, MUST be the value "httpsig-oauth"
-- `keyid` the identifier for the key used to sign the request
 
-The client MUST NOT include an `alg` signature parameter.
+The RS determines the key from the binding of the presented access token, and so the client MUST NOT include the `alg`, `keyid`, or `pub` signature parameters.
 
 For example, the following signed request includes a signature with the needed parameters:
 
@@ -306,12 +307,13 @@ In order for a request protected by an HTTP Message Signature bound access token
 
 - The presented signature validates using the key bound to the token
 - The signature validates using the HTTP_VERIFY algorithm associated with the key
-- The `keyid` value matches the identifier for the key bound to the token
 - The `created` value is not too far in the past (e.g. 30 seconds to account for clock skew and network delays)
 - The `nonce` value has not been previously used within the time validity window of this request
 - The `tag` value is "httpsig-oauth"
 - The covered components and parameters include all items enumerated in {{presenting}}, including the Authorization header field
-- The `alg` parameter is not present
+- The `alg`, `keyid`, and `pub` parameters are not present
+
+The last of these checks, and the corresponding checks in {{issuing}}, are required rather than optional: {{Section 3.2.1 of HTTPSIG}} allows an application to impose requirements beyond those of {{HTTPSIG}}, but requires that it enforce them during verification and fail any signature that does not conform.
 
 If the request includes an entity body (such as a POST, PUT, or QUERY) and a digest as per {{DIGEST}}, the RS MUST validate the digest.
 
@@ -323,9 +325,9 @@ For example, to validate the request:
 {::include tools/examples/rs-request-signed.http}
 ~~~
 
-The RS determines the key bound to the token (in this example, assume the RS introspects the token to get the key material) and validates the `kid` value against that the `keyid` in the signature input. The RS determines the algorithm from the key material.
+The RS determines the key bound to the token (in this example, assume the RS introspects the token to get the key material). The RS determines the algorithm from the key material.
 
-In this example, the client has a key with the `kid` value of `test-key-ecdsa-p256`. The signature input string is:
+In this example, the token is bound to the ECDSA P-256 key `test-key-ecdsa-p256`, giving the `ecdsa-p256-sha256` algorithm. The signature input string is:
 
 ~~~
 {::include tools/examples/rs-sig-base.sigbase}
@@ -337,7 +339,7 @@ The RS then calculates the signature validation against the signature base using
 
 # IANA Considerations {#IANA}
 
-\[\[ TBD: register the token type and new parameters into their appropriate registries, as well as the JWT and introspection parameters needed for confirmation methods. \]\]
+\[\[ TBD: register the token type and new parameters into their appropriate registries, as well as the JWT and introspection parameters needed for confirmation methods. This includes registering the `pub` signature parameter defined in {{embed-keys}} in the "HTTP Signature Metadata Parameters" registry established by {{HTTPSIG}}. \]\]
 
 # Security Considerations {#Security}
 
@@ -348,6 +350,7 @@ The RS then calculates the signature validation against the signature base using
 - Insufficient coverage of a message allows a signature to be attached to a different message.
 - Failure to check derived attributes allows a signature to be replayed.
 - Signatures could be replayed outside of their vailidty window if not checked.
+- An access token cannot be bound to a shared secret. Every party that validates a presented signature needs the key that produced it, and {{Section 7.3.3 of HTTPSIG}} notes that a verifier holding symmetric key material is thereby able to produce a valid signature of its own. Binding a token to a shared secret would let every RS that accepts it produce requests indistinguishable from the client's. The client's registered `jwks` and `jwks_uri` values carry public keys only ({{DYNREG}}), so such a key has nowhere to be registered in any case.
 
 # Privacy Considerations {#Privacy}
 
@@ -362,7 +365,11 @@ The RS then calculates the signature validation against the signature base using
 
 - -03
     - Added co-authors
-    - Changed inline key presentation from header to signature parameter
+    - Changed inline key presentation from a header field carrying a JWK to a single `pub` signature parameter carrying the raw public key
+    - Limited the inline key representation to ECDSA, Ed25519, and ML-DSA
+    - Required the `alg` signature parameter for runtime key introduction
+    - Removed `keyid` from runtime key introduction and from token presentation
+    - Required the bound key to be asymmetric, disallowing shared secrets
 
 - -02
     - Editorial fixes
