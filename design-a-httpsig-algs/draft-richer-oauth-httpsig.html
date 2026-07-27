@@ -1809,7 +1809,7 @@ NOTE: '\' line wrapping per RFC 8792
           <p id="section-11-2.5.1">Signatures could be replayed outside of their vailidty window if not checked.<a href="#section-11-2.5.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-11-2.6">
-          <p id="section-11-2.6.1">An access token cannot be bound to a shared secret. Every party that validates a presented signature needs the key that produced it, and <span><a href="https://rfc-editor.org/rfc/rfc9421#section-7.3.3" class="relref">Section 7.3.3</a> of [<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span> notes that a verifier holding symmetric key material is thereby able to produce a valid signature of its own. Binding a token to a shared secret would let every RS that accepts it produce requests indistinguishable from the client's. A shared secret also has no thumbprint that can be published safely, since publishing it would disclose the secret.<a href="#section-11-2.6.1" class="pilcrow">¶</a></p>
+          <p id="section-11-2.6.1">An access token cannot be bound to a shared secret. Every party that validates a presented signature needs the key that produced it, and <span><a href="https://rfc-editor.org/rfc/rfc9421#section-7.3.3" class="relref">Section 7.3.3</a> of [<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span> notes that a verifier holding symmetric key material is thereby able to produce a valid signature of its own. Binding a token to a shared secret would let every RS that accepts it produce requests indistinguishable from the client's.<a href="#section-11-2.6.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 </section>

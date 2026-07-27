@@ -654,9 +654,7 @@ Table of Contents
       symmetric key material is thereby able to produce a valid
       signature of its own.  Binding a token to a shared secret would
       let every RS that accepts it produce requests indistinguishable
-      from the client's.  A shared secret also has no thumbprint that
-      can be published safely, since publishing it would disclose the
-      secret.
+      from the client's.
 
 12.  Privacy Considerations
 
