@@ -98,64 +98,50 @@ This document contains non-normative examples of partial and complete HTTP messa
 
 To bind an access token to a key, the AS needs to know which key to bind to which token. This specification defines two common methods depending on the needs of the client:
 
-- A static method that depends on key material available as part of the client registration
+- A static method that depends on a key thumbprint registered as part of the client registration
 - A runtime method that allows a client to introduce key material during the token request phase of {{OAUTH}}
 
 As part of its registration, a client MUST indicate which method it will use, using either the `httpsig_key_binding_method` client registration metadata parameter defined (TBD) in {{IANA}} when using Dynamic Client Registration ({{DYNREG}}) or Client ID Metadata Document ({{I-D.ietf-oauth-client-id-metadata-document}}), or via an out of band method.
+
+\[\[ Editor's note: the values of `httpsig_key_binding_method` still need defining. The example below uses "preregistered" for {{preregister}}, and the method in {{runtime}} has no name yet. \]\]
 
 \[\[ Editor's note: do we want to add an AS/RS metadata parameter to signal support for each type? \]\]
 
 \[\[ Editor's note: Are there any other patterns of key introduction we should cover? I put PAR in the appendix as a note. \]\]
 
+## Presenting the Key {#present-key}
+
+The client presents its key, as defined in {{key}}, to the AS in the token request, in two signature parameters attached to the signature input: `alg` as a String, and `pub` as a Byte Sequence.
+
+The key is presented in full, so the AS has nothing to dereference and the client MUST NOT include the `keyid` signature parameter.
+
+This is the same whichever binding method the client uses. The two differ only in what the AS does with the key it receives.
+
 ## Pre-Registration of Keys {#preregister}
 
-A client pre-registering its keys for {{HTTPSIG}} binding MUST include the key in its registered `jwks` value or make it available from its `jwks_uri` endpoint. The JWK MUST have a `kid` field and MUST indicate a signing algorithm in its `alg` field. The key ID for the public key used for HTTP Message Signature bound access tokens MUST be identified using the `httpsig_bound_access_token_kid` field in the client's metadata.
+A client pre-registering its key for {{HTTPSIG}} binding MUST publish the thumbprint of that key, as defined in {{thumbprint}}, in the `httpsig_bound_access_token_thumbprint` field of its client metadata.
 
-\[\[ Editor's note: do we want to have a client field for the signing alg or just leave that to the key all the time? I prefer to keep it in the key. \]\]
+The client does not publish the key itself. It presents the key in the token request as in {{present-key}}, and the AS binds a token to that key only if its thumbprint matches the registered value.
 
-A pre-registered key MUST be an asymmetric key, and the registered JWK MUST be its public key. A shared secret MUST NOT be used to bind an access token; see {{Security}}.
+Because the algorithm identifier is an input to the thumbprint, the registered value commits the client to a single algorithm as well as to a single key.
 
-If the key is pre-registered, the signature algorithm MUST be derived from the indicated key. The client MUST NOT include the `alg` or `pub` signature parameters.
+Note that pre-registration can occur statically or dynamically (such as by using {{DYNREG}}), as long as the thumbprint is associated with the client's `client_id` before the token request is made.
 
-Note that pre-registration can occur statically or dynamically (such as by using {{DYNREG}}), as long as the key is associated with the client's `client_id` before the token request is made.
+\[\[ Editor's note: `httpsig_bound_access_token_thumbprint` should become an array of thumbprints, so that a client can rotate keys and register more than one. The AS would then bind a token if the presented key's thumbprint matches any registered value. \]\]
 
 ### Example Client Registration
 
-A client can publish the key binding parameters as part of a {{I-D.ietf-oauth-client-id-metadata-document}} alongside its `jwks` or `jwks_uri` values. For example, a client with the `client_id` value `https://client.example.com/client-metadata.json` would publish the following document at that URL, indicating that it uses a pre-registered key:
+A client can publish the key binding parameters as part of a {{I-D.ietf-oauth-client-id-metadata-document}}. For example, a client with the `client_id` value `https://client.example.com/client-metadata.json` would publish the following document at that URL, indicating that it uses a pre-registered key:
 
 ~~~ json
-{
-    "client_id": "https://client.example.com/client-metadata.json",
-    "client_name": "Example Client",
-    "jwks": {
-        "keys": [
-            {
-                "kty": "OKP",
-                "use": "sig",
-                "crv": "Ed25519",
-                "kid": "j-0Ny45NWmqGq6GQ",
-                "x": "iuemcj_GhRHmY_yCsMlDNp3BQgPZDdG00VRsg_BgU3s",
-                "alg": "EdDSA"
-            }
-        ]
-    },
-    "httpsig_bound_access_token_kid": "j-0Ny45NWmqGq6GQ",
-    "httpsig_key_binding_method": "preregistered"
-}
+{::include tools/examples/client-metadata.json}
 ~~~
 
 ## Token Request Key Introduction {#runtime}
 
-Instead of pre-registering a key, a client can introduce its key during the token request in a similar fashion as {{DPOP}}.
+Instead of pre-registering a thumbprint, a client can introduce its key during the token request in a similar fashion as {{DPOP}}.
 
-To use this mode, the client MUST:
-
-* Include the `alg` signature parameter with a value from the "HTTP Signature Algorithms" registry, indicating an asymmetric signature algorithm for which this document defines a public key encoding in {{embed-keys}}.
-* Include its public key in the `pub` signature parameter as described in {{embed-keys}}.
-
-The client MUST NOT include the `keyid` signature parameter.
-
-The included key MUST be appropriate for the indicated algorithm.
+A client using this method presents its key as in {{present-key}}, and the AS binds a token to the presented key subject to its own policy. No prior registration of the key or its thumbprint is required.
 
 ## Token Request {#request}
 
@@ -188,9 +174,7 @@ The signature MUST include the following parameters:
 - `created` a timestamp for signature creation; this MUST be within a small number of seconds of issuance (e.g. 30 seconds to account for clock skew)
 - `nonce` a random unique value that the AS can use to prevent signature replay within the small validity time window
 - `tag` a string indicating that this is being used for requesting a bound token, MUST be the value "httpsig-oauth-token-request"
-- `keyid` the identifier for the key to be used for binding the token; this parameter is included only if the client uses pre-registered keys as in {{preregister}}, in which case the value MUST match the `httpsig_bound_access_token_kid` value
-
-Additionally, if the key is presented at runtime, the `alg` and `pub` signature parameters MUST be included as defined in {{runtime}}.
+- `alg` and `pub` the client's key, as defined in {{present-key}}
 
 An example request to the token endpoint (using a runtime-provided key here) can look like the following:
 
@@ -198,9 +182,45 @@ An example request to the token endpoint (using a runtime-provided key here) can
 {::include tools/examples/token-request-signed.http}
 ~~~
 
+# Signature Algorithms {#algorithms}
+
+The signature algorithms used by this specification are values from the "HTTP Signature Algorithms" registry established by {{Section 6.2 of HTTPSIG}}.
+
+The algorithm MUST be an asymmetric signature algorithm for which a public key encoding is defined. {{embed-keys}} defines encodings for the asymmetric algorithms in that registry at the time of writing. An encoding for an algorithm registered later can be defined by any specification, including the one that registers the algorithm.
+
+# HTTP Signature Public Keys {#key}
+
+A public key is represented as a pair of values:
+
+- `alg`: an identifier from the "HTTP Signature Algorithms" registry
+- `pub`: the public key material for that algorithm, encoded as defined in {{embed-keys}}
+
+The two are always carried together: a `pub` value has no meaning without the `alg` that determines how to parse it.
+
+## Key Thumbprint {#thumbprint}
+
+The thumbprint of a key is the SHA-256 digest of the concatenation of:
+
+- the `alg` identifier, encoded as ASCII
+- a single zero octet (0x00)
+- the `pub` octets
+
+Where the thumbprint is carried as a string, it is the base64url encoding of that digest without padding.
+
+## JSON Representation {#key-json}
+
+Where a key is carried in a JSON object, such as in an access token confirmation method, it is represented as a JSON object with two members: `alg`, the algorithm identifier as a string, and `pub`, the base64url encoding of the `pub` octets without padding.
+
+~~~ json
+{
+    "alg": "ed25519",
+    "pub": "iuemcj_GhRHmY_yCsMlDNp3BQgPZDdG00VRsg_BgU3s"
+}
+~~~
+
 # Embedding a Public Key Value {#embed-keys}
 
-When encoding a public key value in a runtime request as in {{runtime}}, the client includes the public key material in the `pub` signature parameter attached to the signature input, encoded as a Byte Sequence as defined in {{STRUCTURED}}.
+When presenting a key as in {{present-key}}, the client includes the public key material in the `pub` signature parameter attached to the signature input, encoded as a Byte Sequence as defined in {{STRUCTURED}}.
 
 The contents of the `pub` parameter are the public key material appropriate to the signature algorithm indicated by the `alg` signature parameter, as defined in the following sections.
 
@@ -224,13 +244,15 @@ If the `alg` value indicates an ML-DSA algorithm, the `pub` parameter contains t
 
 # Issuing an HTTP Message Signature Bound Access Token {#issuing}
 
-The AS MUST validate the signature of the token request sent in {{request}} against the identified key and the algorithm associated with that key.
+The AS MUST validate the signature of the token request sent in {{request}} against the key presented in that request, using the algorithm named alongside it as in {{present-key}}.
 
 The request MUST fail with an error if any of the following occur:
 
-- The client uses pre-registered keys as in {{preregister}} and the key named in `keyid` cannot be found or is not associated with the requesting client
-- The client uses pre-registered keys as in {{preregister}} and the `alg` or `pub` parameter is present
-- The client introduces its key at runtime as in {{runtime}} and the `keyid` parameter is present
+- The `alg` or `pub` parameter is absent, or the `keyid` parameter is present
+- The `alg` value is not an asymmetric algorithm, or no public key encoding is defined for it
+- The `pub` value is not a well-formed public key for the indicated algorithm
+- The client uses pre-registered keys as in {{preregister}} and the thumbprint of the presented key does not match the client's registered `httpsig_bound_access_token_thumbprint` value
+- The `Content-Digest` field value does not match a digest computed over the request body
 - There is more than one signature with the tag "httpsig-oauth-token-request"
 - The `created` value of the signature is too far in the past
 - The `nonce` value is used more than once within the validity window of the signature
@@ -249,17 +271,36 @@ Content-Type: application/json
 }
 ~~~
 
-The client MUST associate this returned access token with the key used to make the requst.
+The client MUST associate this returned access token with the key used to make the request.
 
-\[\[ Editor's note: we should define confirmation methods for access tokens here, including JWT values and introspection response values to allow the RS to verify the signature w/o the client's registration information. Leaving the following sections as placeholders. \]\]
+The confirmation carries the key itself, in the JSON representation of {{key-json}}, so that an RS can validate a presented signature without reference to the client's registration.
 
 ## Encoding Confirmation in a JWT
 
+The key bound to the token is carried in the `htsk` member of the `cnf` claim.
+
+~~~ json
+{
+    "iss": "https://server.example.com",
+    "aud": "https://resource.example.com",
+    "cnf": {
+        "htsk": {
+            "alg": "ed25519",
+            "pub": "iuemcj_GhRHmY_yCsMlDNp3BQgPZDdG00VRsg_BgU3s"
+        }
+    }
+}
+~~~
+
 ## Returning Confirmation in Token Introspection
+
+The same `cnf` member is returned in a token introspection response.
+
+\[\[ Editor's note: `htsk` needs registering in the "JWT Confirmation Methods" registry. Nothing further is needed for introspection, since `cnf` is already a registered introspection response parameter and carries the same structure. \]\]
 
 # Presenting an HTTP Message Signature Bound Access Token {#presenting}
 
-HTTP Message Signature bound access token MUST be presented in an HTTP Authorization field using the `HTTPSig` authorization scheme.
+An HTTP Message Signature bound access token MUST be presented in an HTTP Authorization field using the `HTTPSig` authorization scheme.
 
 ~~~
 Authorization: HTTPSig 2340897.34j123-134uh2345n
@@ -290,8 +331,8 @@ If the request includes an entity body (such as a POST, PUT, or QUERY), the clie
 The signature MUST include the following parameters:
 
 - `created` a timestamp for signature creation; this MUST be within a small number of seconds of issuance (e.g. 30 seconds to account for clock skew)
-- `nonce` a random unique value that the AS can use to prevent signature replay within the small validity time window
-- `tag` a string indicating that this is being used for requesting a bound token, MUST be the value "httpsig-oauth"
+- `nonce` a random unique value that the RS can use to prevent signature replay within the small validity time window
+- `tag` a string indicating that this is being used for presenting a bound token, MUST be the value "httpsig-oauth"
 
 The RS determines the key from the binding of the presented access token, and so the client MUST NOT include the `alg`, `keyid`, or `pub` signature parameters.
 
@@ -305,8 +346,7 @@ For example, the following signed request includes a signature with the needed p
 
 In order for a request protected by an HTTP Message Signature bound access token to be considered valid, the RS MUST perform the following checks:
 
-- The presented signature validates using the key bound to the token
-- The signature validates using the HTTP_VERIFY algorithm associated with the key
+- The presented signature verifies against the signature base using the key bound to the token, under the HTTP_VERIFY primitive for that key's algorithm
 - The `created` value is not too far in the past (e.g. 30 seconds to account for clock skew and network delays)
 - The `nonce` value has not been previously used within the time validity window of this request
 - The `tag` value is "httpsig-oauth"
@@ -322,12 +362,12 @@ If the request includes multiple signatures tagged "httpsig-oauth", all signatur
 For example, to validate the request:
 
 ~~~ http-message
-{::include tools/examples/rs-request-signed.http}
+{::include tools/examples/present-request-signed.http}
 ~~~
 
-The RS determines the key bound to the token (in this example, assume the RS introspects the token to get the key material). The RS determines the algorithm from the key material.
+The RS determines the key bound to the token (in this example, assume the RS introspects the token to get the key material). The RS takes both the public key and the algorithm from the `htsk` confirmation associated with the token, as in {{key-json}}.
 
-In this example, the token is bound to the ECDSA P-256 key `test-key-ecdsa-p256`, giving the `ecdsa-p256-sha256` algorithm. The signature input string is:
+In this example, the token is bound to the Ed25519 key the client presented in the token request in {{request}}, giving the `ed25519` algorithm. The signature input string is:
 
 ~~~
 {::include tools/examples/rs-sig-base.sigbase}
@@ -339,7 +379,7 @@ The RS then calculates the signature validation against the signature base using
 
 # IANA Considerations {#IANA}
 
-\[\[ TBD: register the token type and new parameters into their appropriate registries, as well as the JWT and introspection parameters needed for confirmation methods. This includes registering the `pub` signature parameter defined in {{embed-keys}} in the "HTTP Signature Metadata Parameters" registry established by {{HTTPSIG}}. \]\]
+\[\[ TBD: register the token type and new parameters into their appropriate registries, as well as the JWT and introspection parameters needed for confirmation methods. This includes registering the `pub` signature parameter defined in {{present-key}} in the "HTTP Signature Metadata Parameters" registry established by {{HTTPSIG}}, the `htsk` confirmation method, and the `httpsig_bound_access_token_thumbprint` client metadata field. \]\]
 
 # Security Considerations {#Security}
 
@@ -349,8 +389,8 @@ The RS then calculates the signature validation against the signature base using
 - Leakage of a private key alongside a token allows for re-presentation of that token.
 - Insufficient coverage of a message allows a signature to be attached to a different message.
 - Failure to check derived attributes allows a signature to be replayed.
-- Signatures could be replayed outside of their vailidty window if not checked.
-- An access token cannot be bound to a shared secret. Every party that validates a presented signature needs the key that produced it, and {{Section 7.3.3 of HTTPSIG}} notes that a verifier holding symmetric key material is thereby able to produce a valid signature of its own. Binding a token to a shared secret would let every RS that accepts it produce requests indistinguishable from the client's. The client's registered `jwks` and `jwks_uri` values carry public keys only ({{DYNREG}}), so such a key has nowhere to be registered in any case.
+- Signatures could be replayed outside of their validity window if not checked.
+- An access token cannot be bound to a shared secret. Every party that validates a presented signature needs the key that produced it, and {{Section 7.3.3 of HTTPSIG}} notes that a verifier holding symmetric key material is thereby able to produce a valid signature of its own. Binding a token to a shared secret would let every RS that accepts it produce requests indistinguishable from the client's.
 
 # Privacy Considerations {#Privacy}
 
@@ -366,10 +406,11 @@ The RS then calculates the signature validation against the signature base using
 - -03
     - Added co-authors
     - Changed inline key presentation from a header field carrying a JWK to a single `pub` signature parameter carrying the raw public key
-    - Limited the inline key representation to ECDSA, Ed25519, and ML-DSA
     - Required the `alg` signature parameter for runtime key introduction
-    - Removed `keyid` from runtime key introduction and from token presentation
+    - Removed `keyid` entirely; the key is presented to the AS and carried in the token binding for the RS
     - Required the bound key to be asymmetric, disallowing shared secrets
+    - Made the client present its key in the token request under both binding methods, and reduced pre-registration to a key thumbprint rather than a value
+    - Defined the key thumbprint, the JSON key representation, and the `htsk` confirmation method
 
 - -02
     - Editorial fixes

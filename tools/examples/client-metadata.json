@@ -1,0 +1,7 @@
+{
+    "client_id": "https://client.example.com/client-metadata.json",
+    "client_name": "Example Client",
+    "httpsig_bound_access_token_thumbprint":
+        "a3ugj_QpnJqJm_ixvE5t6zCEPkIq7fZAiZ63-O-kAcY",
+    "httpsig_key_binding_method": "preregistered"
+}

@@ -504,6 +504,28 @@ def runtime_key_params(public_pem: bytes, algorithm: type) -> "collections.Order
     return params
 
 
+def algorithm_name(algorithm: type) -> str:
+    """Return the RFC9421 algorithm identifier for an algorithm class."""
+    for name, cls in ALGORITHM_MAP.items():
+        if cls is algorithm:
+            return name
+    raise ValueError(f"No algorithm identifier for {algorithm.__name__}")
+
+
+def key_thumbprint(public_pem: bytes, algorithm: type) -> str:
+    """Compute the key thumbprint per the draft's Key Thumbprint section.
+
+    SHA-256 over the ASCII `alg` identifier, a single zero octet, and the
+    `pub` octets from {#embed-keys}; base64url encoded without padding.
+    """
+    import hashlib
+
+    alg = algorithm_name(algorithm)
+    pub = runtime_key_params(public_pem, algorithm)["pub"]
+    digest = hashlib.sha256(alg.encode("ascii") + b"\x00" + pub).digest()
+    return base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
+
+
 class InspectableSigner(HTTPMessageSigner):
     """HTTPMessageSigner that stores the last signature base for inspection.
 
@@ -667,6 +689,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--out-digest", type=Path, default=None,
                    help="Write the Content-Digest header line to this file "
                         "(implies --content-digest)")
+    p.add_argument("--out-thumbprint", type=Path, default=None,
+                   help="Write the key's thumbprint, per the draft's Key "
+                        "Thumbprint section, to this file")
     return p
 
 
@@ -744,10 +769,18 @@ def main() -> None:
         args.out_digest.write_text(content + "\n")
         print(f"Wrote content-digest to {args.out_digest}", file=sys.stderr)
 
+    if args.out_thumbprint is not None:
+        if key.public_pem is None:
+            raise SystemExit("--out-thumbprint requires a key with public material")
+        args.out_thumbprint.write_text(
+            key_thumbprint(key.public_pem, key.algorithm) + "\n")
+        print(f"Wrote thumbprint to {args.out_thumbprint}", file=sys.stderr)
+
     # If any direct output target was given, skip the combined stdout report
     # unless an explicit --output was also requested.
     any_target = any(t is not None for t in
-                     (args.out_signed, args.out_sig_base, args.out_digest))
+                     (args.out_signed, args.out_sig_base, args.out_digest,
+                      args.out_thumbprint))
     if any_target and args.output is None:
         return
 

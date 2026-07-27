@@ -27,11 +27,28 @@ py "$ex/token-request.http" \
     --nonce b3k2pp5k7z-50gnX1b06 \
     --created 1618884473 \
     --out-digest "$ex/content-digest.hdr" \
+    --out-thumbprint "$ex/thumbprint.txt" \
     --out-signed "$ex/token-request-signed.http"
 
+# --- Client registration metadata ------------------------------------------
+# #1 the client metadata document. The registered thumbprint is the one just
+# computed, so the registration example and the token request describe the same
+# key rather than drifting apart.
+cat > "$ex/client-metadata.json" <<EOF
+{
+    "client_id": "https://client.example.com/client-metadata.json",
+    "client_name": "Example Client",
+    "httpsig_bound_access_token_thumbprint":
+        "$(cat "$ex/thumbprint.txt")",
+    "httpsig_key_binding_method": "preregistered"
+}
+EOF
+
 # --- Presenting the bound token (Ed25519) ----------------------------------
-# #7 (also reused verbatim for #8). The token is already bound, so neither the
-# key nor an identifier for it appears on the wire.
+# #7 signed message (reused verbatim for #10) and #9 signature base. The same
+# key the token was bound to above, so the whole document follows one token and
+# one key. The token is already bound, so neither the key nor an identifier for
+# it appears on the wire.
 py "$ex/rs-request.http" \
     --key "$ex/token-key.jwk" \
     --covered @method @target-uri authorization \
@@ -39,20 +56,8 @@ py "$ex/rs-request.http" \
     --tag httpsig-oauth \
     --nonce k9Jyxempel2305Nmx7Rk \
     --created 1776650875 \
-    --out-signed "$ex/present-request-signed.http"
-
-# --- Presenting with an EC P-256 key (sig base + signed message) -----------
-# #9 signature base and #10 signed message, from the same plain message as #7.
-py "$ex/rs-request.http" \
-    --key "$ex/test-key-ecdsa-p256.pem" \
-    --key-id test-key-ecdsa-p256 \
-    --covered @method @target-uri authorization \
-    --no-keyid \
-    --tag httpsig-oauth \
-    --nonce k9Jyxempel2305Nmx7Rk \
-    --created 1776650875 \
     --show-sig-base \
     --out-sig-base "$ex/rs-sig-base.sigbase" \
-    --out-signed "$ex/rs-request-signed.http"
+    --out-signed "$ex/present-request-signed.http"
 
 echo "Regenerated example include files in $ex" >&2
