@@ -17,12 +17,12 @@ py() { python3 "$gensig" "$@"; }
 
 # --- Token request (runtime Ed25519 key) -----------------------------------
 # #2 Content-Digest of the form body and #3 the signed token request.
-# The runtime key is embedded in the pub param; --runtime-key forces the alg
-# param on and drops keyid.
+# The key is embedded in the pub param and named by jws_alg; --runtime-key
+# drops keyid, and --jws-alg suppresses the RFC9421 alg param.
 py "$ex/token-request.http" \
     --key "$ex/token-key.jwk" \
     --covered @method @target-uri content-digest authorization \
-    --content-digest --runtime-key \
+    --content-digest --runtime-key --jws-alg Ed25519 \
     --tag httpsig-oauth-token-request \
     --nonce b3k2pp5k7z-50gnX1b06 \
     --created 1618884473 \

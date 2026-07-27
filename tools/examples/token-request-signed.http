@@ -7,11 +7,11 @@ Content-Type: application/x-www-form-urlencoded
 Content-Digest: sha-256=:4fEzRVTGqfZg7lqf/d3oxXu837pvb3L0GN24+F\
   1VkZk=:
 Signature-Input: sig1=("@method" "@target-uri" "content-digest" \
-  "authorization");created=1618884473;alg="ed25519"\
-  ;nonce="b3k2pp5k7z-50gnX1b06";tag="httpsig-oauth-token-request"\
+  "authorization");created=1618884473;nonce="b3k2pp5k7z-50gnX1b06"\
+  ;tag="httpsig-oauth-token-request";jws_alg="Ed25519"\
   ;pub=:iuemcj/GhRHmY/yCsMlDNp3BQgPZDdG00VRsg/BgU3s=:
-Signature: sig1=:W1jjnCpI59MI13gajmWP9DViwQHXhQdQ8r8q+h+Drp2JbJyu/md\
-  QrMMkGuiMvkWWY/noYbi9L4cW/lTOZigsCQ==:
+Signature: sig1=:sr2ZoBVqjQOk4BumquJNrkgKWw4/grd8riGVLL5FMUzsA5wMPsW\
+  VwqzAkaLi6RF+POsmPpZUNBpLkSFI+jlhBg==:
 
 grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA&redirect_u\
   ri=https%3A%2F%2Fclient%2Eexample%2Ecom%2Fcb

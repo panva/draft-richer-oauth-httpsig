@@ -7,5 +7,5 @@ Authorization: HTTPSig 2340897.34j123-134uh2345n
 Signature-Input: sig1=("@method" "@target-uri" "authorization")\
   ;created=1776650875;nonce="k9Jyxempel2305Nmx7Rk"\
   ;tag="httpsig-oauth"
-Signature: sig1=:ZT/aeezwK0q2jRs58DR0D0ZTwVcBLuOy4UU/OTUaACWaCDASsFP\
-  o/wFysJ8AH8Sby4wSH3bAb55i0oVWFqmEBg==:
+Signature: sig1=:HBubXR0tedtt3dlj1VpB4e1LQvAeeSAXXjX3nrP26CLqubOc/Q+\
+  UvUE6F2hJpYiitZbLx8SMPX2c8C3PjHp3Mg==:

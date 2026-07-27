@@ -45,6 +45,11 @@ normative:
     PAR: RFC9126
     DYNREG: RFC7591
     HTTPAUTH: RFC7235
+    JWK: RFC7517
+    JWA: RFC7518
+    OKP: RFC8037
+    POPKEY: RFC7800
+    RFC9864:
     RFC8032:
     RFC9964:
     SEC1:
@@ -109,13 +114,11 @@ As part of its registration, a client MUST indicate which method it will use, us
 
 ## Pre-Registration of Keys {#preregister}
 
-A client pre-registering its keys for {{HTTPSIG}} binding MUST include the key in its registered `jwks` value or make it available from its `jwks_uri` endpoint. The JWK MUST have a `kid` field and MUST indicate a signing algorithm in its `alg` field. The key ID for the public key used for HTTP Message Signature bound access tokens MUST be identified using the `httpsig_bound_access_token_kid` field in the client's metadata.
-
-\[\[ Editor's note: do we want to have a client field for the signing alg or just leave that to the key all the time? I prefer to keep it in the key. \]\]
+A client pre-registering its key for {{HTTPSIG}} binding MUST include the key in its registered `jwks` value or make it available from its `jwks_uri` endpoint. The JWK MUST have a `kid` field, and MUST have an `alg` field naming an algorithm permitted by {{algorithms}}. The key used for HTTP Message Signature bound access tokens MUST be identified using the `httpsig_bound_access_token_kid` field in the client's metadata.
 
 A pre-registered key MUST be an asymmetric key, and the registered JWK MUST be its public key. A shared secret MUST NOT be used to bind an access token; see {{Security}}.
 
-If the key is pre-registered, the signature algorithm MUST be derived from the indicated key. The client MUST NOT include the `alg` or `pub` signature parameters.
+The client identifies the key in the token request with the `keyid` signature parameter, and MUST NOT include the `jws_alg` or `pub` signature parameters. The AS dereferences `keyid` against the client's key set, and the JWK it finds carries both the key material and, in its `alg` field, the algorithm.
 
 Note that pre-registration can occur statically or dynamically (such as by using {{DYNREG}}), as long as the key is associated with the client's `client_id` before the token request is made.
 
@@ -135,7 +138,7 @@ A client can publish the key binding parameters as part of a {{I-D.ietf-oauth-cl
                 "crv": "Ed25519",
                 "kid": "j-0Ny45NWmqGq6GQ",
                 "x": "iuemcj_GhRHmY_yCsMlDNp3BQgPZDdG00VRsg_BgU3s",
-                "alg": "EdDSA"
+                "alg": "Ed25519"
             }
         ]
     },
@@ -150,12 +153,10 @@ Instead of pre-registering a key, a client can introduce its key during the toke
 
 To use this mode, the client MUST:
 
-* Include the `alg` signature parameter with a value from the "HTTP Signature Algorithms" registry, indicating an asymmetric signature algorithm for which this document defines a public key encoding in {{embed-keys}}.
-* Include its public key in the `pub` signature parameter as described in {{embed-keys}}.
+* Include the `jws_alg` signature parameter, as a String, naming an algorithm permitted by {{algorithms}} for which {{embed-keys}} defines a public key encoding.
+* Include its public key in the `pub` signature parameter, as a Byte Sequence, as described in {{embed-keys}}.
 
-The client MUST NOT include the `keyid` signature parameter.
-
-The included key MUST be appropriate for the indicated algorithm.
+The client MUST NOT include the `keyid` signature parameter. The two values together determine a JWK, reconstructed as described in {{embed-keys}}, which is the key the AS binds to the token.
 
 ## Token Request {#request}
 
@@ -188,9 +189,8 @@ The signature MUST include the following parameters:
 - `created` a timestamp for signature creation; this MUST be within a small number of seconds of issuance (e.g. 30 seconds to account for clock skew)
 - `nonce` a random unique value that the AS can use to prevent signature replay within the small validity time window
 - `tag` a string indicating that this is being used for requesting a bound token, MUST be the value "httpsig-oauth-token-request"
-- `keyid` the identifier for the key to be used for binding the token; this parameter is included only if the client uses pre-registered keys as in {{preregister}}, in which case the value MUST match the `httpsig_bound_access_token_kid` value
 
-Additionally, if the key is presented at runtime, the `alg` and `pub` signature parameters MUST be included as defined in {{runtime}}.
+Additionally, a client using a pre-registered key includes the `keyid` parameter as defined in {{preregister}}, and a client introducing its key at runtime includes the `jws_alg` and `pub` parameters as defined in {{runtime}}.
 
 An example request to the token endpoint (using a runtime-provided key here) can look like the following:
 
@@ -198,39 +198,64 @@ An example request to the token endpoint (using a runtime-provided key here) can
 {::include tools/examples/token-request-signed.http}
 ~~~
 
+# Signature Algorithms {#algorithms}
+
+The signature algorithms used by this specification are JSON Web Signature algorithms, applied as per {{Section 3.3.7 of HTTPSIG}} and named by values from the "JSON Web Signature and Encryption Algorithms" registry established by {{JWA}}.
+
+As per {{Section 3.3.7 of HTTPSIG}}, JWS algorithm values are not registered in the "HTTP Signature Algorithms" registry, so the client MUST NOT include the `alg` signature parameter. The algorithm comes from the key: from the `alg` field of the pre-registered JWK as in {{preregister}}, or from the `jws_alg` signature parameter as in {{runtime}}.
+
+The algorithm MUST be an asymmetric signature algorithm. It MUST be fully specified: a polymorphic identifier, one that names a different signature algorithm depending on the key it is used with, MUST NOT be used. `EdDSA` is such an identifier and is deprecated by {{RFC9864}}, which defines the fully specified `Ed25519` and `Ed448` in its place.
+
 # Embedding a Public Key Value {#embed-keys}
 
-When encoding a public key value in a runtime request as in {{runtime}}, the client includes the public key material in the `pub` signature parameter attached to the signature input, encoded as a Byte Sequence as defined in {{STRUCTURED}}.
+When introducing a key at runtime as in {{runtime}}, the client includes the public key material in the `pub` signature parameter attached to the signature input, encoded as a Byte Sequence as defined in {{STRUCTURED}}.
 
-The contents of the `pub` parameter are the public key material appropriate to the signature algorithm indicated by the `alg` signature parameter, as defined in the following sections.
+The contents of `pub`, and the JWK that `jws_alg` and `pub` together determine, depend on the key type the algorithm uses.
+
+The `pub` parameter is a Byte Sequence, so parsing it yields raw octets, whereas a JWK member holding an octet string carries it base64url encoded without padding. Reconstruction therefore encodes those octets; it never uses them directly. In every reconstructed JWK the `alg` member is set to the `jws_alg` value.
+
+An algorithm whose key type is not covered by the following sections MUST NOT be used for runtime key introduction.
 
 ## ECDSA
 
-If the `alg` value is `ecdsa-p256-sha256` or `ecdsa-p384-sha384`, the `pub` parameter contains the uncompressed point representation of the public key: the single octet `0x04` followed by the big-endian, zero-padded, fixed-length encodings of the key's X and Y coordinates. This is the output of the Elliptic-Curve-Point-to-Octet-String Conversion in Section 2.3.3 of {{SEC1}} with point compression off.
+If the algorithm uses an elliptic curve key, `pub` contains the uncompressed point representation of the public key: the single octet `0x04` followed by the big-endian, zero-padded X and Y coordinates. This is the output of the Elliptic-Curve-Point-to-Octet-String Conversion in Section 2.3.3 of {{SEC1}} with point compression off.
 
-For `ecdsa-p256-sha256`, the X and Y values are exactly 32 octets each and the `pub` value is exactly 65 octets. For `ecdsa-p384-sha384`, the X and Y values are exactly 48 octets each and the `pub` value is exactly 97 octets.
+Each coordinate is exactly the full size of a coordinate for the curve, as {{Section 6.2.1.2 of JWA}} requires of the corresponding JWK member, so `pub` is one octet longer than twice that size.
 
-## Ed25519
+| jws_alg value | crv | Coordinate | pub |
+|---|---|---|---|
+| `ES256` | `P-256` | 32 octets | 65 octets |
+| `ES384` | `P-384` | 48 octets | 97 octets |
+| `ES512` | `P-521` | 66 octets | 133 octets |
+| `ES256K` | `secp256k1` | 32 octets | 65 octets |
+{: #ec-map title="Elliptic curve algorithms"}
 
-If the `alg` value is `ed25519`, the `pub` parameter contains the Ed25519 public key `A`, which is the encoding of the point `[s]B` as specified in {{Section 5.1.5 of RFC8032}}.
+The reconstructed JWK has a `kty` of `EC`, the `crv` given above, and `x` and `y` set to the base64url encodings of the X and Y coordinate octets respectively.
 
-The key value is exactly 32 octets in length.
+## EdDSA
 
-## ML-DSA
+If the algorithm uses an Edwards curve key, `pub` contains the public key `A`, which is the encoding of the point `[s]B` as specified in {{Section 5.1.5 of RFC8032}} for Ed25519 and {{Section 5.2.5 of RFC8032}} for Ed448. The value is exactly 32 octets for `Ed25519` and exactly 57 octets for `Ed448`.
 
-If the `alg` value indicates an ML-DSA algorithm, the `pub` parameter contains the ML-DSA public key, using the same encoding as the `pub` parameter of an AKP JSON Web Key defined in {{Section 3 of RFC9964}}, prior to its base64url encoding.
+The reconstructed JWK has a `kty` of `OKP`, a `crv` of `Ed25519` or `Ed448`, and `x` set to the base64url encoding of those octets, as defined in {{Section 2 of OKP}}.
 
-\[\[ Editor's note: ML-DSA algorithm identifiers for use with {{HTTPSIG}} are being defined in separate work; a reference will be added here once that document is available. \]\]
+## Algorithms Using the AKP Key Type
+
+If the algorithm uses the AKP key type defined in {{Section 3 of RFC9964}}, `pub` contains the octets that key type carries in its own `pub` member, prior to that member's base64url encoding.
+
+The reconstructed JWK has a `kty` of `AKP`, the `alg` member described above, and a `pub` member set to the base64url encoding of the octets carried in the `pub` signature parameter.
+
+AKP names its algorithm in the key and, as {{Section 3 of RFC9964}} puts it, is defined "for use with algorithms not limited to those registered in this document". This section therefore covers any algorithm given an AKP representation, including the ML-DSA algorithms of {{RFC9964}}, without further definition here.
 
 # Issuing an HTTP Message Signature Bound Access Token {#issuing}
 
-The AS MUST validate the signature of the token request sent in {{request}} against the identified key and the algorithm associated with that key.
+The AS MUST validate the signature of the token request sent in {{request}} against the key identified for that request, using the algorithm that accompanies the key.
 
 The request MUST fail with an error if any of the following occur:
 
-- The client uses pre-registered keys as in {{preregister}} and the key named in `keyid` cannot be found or is not associated with the requesting client
-- The client uses pre-registered keys as in {{preregister}} and the `alg` or `pub` parameter is present
-- The client introduces its key at runtime as in {{runtime}} and the `keyid` parameter is present
+- The `alg` parameter is present
+- The client uses a pre-registered key as in {{preregister}} and the `keyid` parameter is absent, names no key in the client's key set, or names a key whose `alg` field is missing or not permitted by {{algorithms}}
+- The client introduces its key at runtime as in {{runtime}} and the `keyid` parameter is present, or the `jws_alg` or `pub` parameter is absent
+- The `jws_alg` value is not permitted by {{algorithms}}, or the `pub` value is not a well-formed public key for it
 - There is more than one signature with the tag "httpsig-oauth-token-request"
 - The `created` value of the signature is too far in the past
 - The `nonce` value is used more than once within the validity window of the signature
@@ -251,11 +276,30 @@ Content-Type: application/json
 
 The client MUST associate this returned access token with the key used to make the requst.
 
-\[\[ Editor's note: we should define confirmation methods for access tokens here, including JWT values and introspection response values to allow the RS to verify the signature w/o the client's registration information. Leaving the following sections as placeholders. \]\]
+The confirmation carries the reconstructed JWK, so that an RS can validate a presented signature without reference to the client's registration.
 
 ## Encoding Confirmation in a JWT
 
+The key bound to the token is carried in the `jwk` member of the `cnf` claim, as defined in {{Section 3.2 of POPKEY}}.
+
+~~~ json
+{
+    "iss": "https://server.example.com",
+    "aud": "https://resource.example.com",
+    "cnf": {
+        "jwk": {
+            "kty": "OKP",
+            "crv": "Ed25519",
+            "alg": "Ed25519",
+            "x": "iuemcj_GhRHmY_yCsMlDNp3BQgPZDdG00VRsg_BgU3s"
+        }
+    }
+}
+~~~
+
 ## Returning Confirmation in Token Introspection
+
+The same `cnf` member is returned in a token introspection response.
 
 # Presenting an HTTP Message Signature Bound Access Token {#presenting}
 
@@ -293,7 +337,7 @@ The signature MUST include the following parameters:
 - `nonce` a random unique value that the AS can use to prevent signature replay within the small validity time window
 - `tag` a string indicating that this is being used for requesting a bound token, MUST be the value "httpsig-oauth"
 
-The RS determines the key from the binding of the presented access token, and so the client MUST NOT include the `alg`, `keyid`, or `pub` signature parameters.
+The RS determines the key from the binding of the presented access token, and so the client MUST NOT include the `alg`, `jws_alg`, `keyid`, or `pub` signature parameters.
 
 For example, the following signed request includes a signature with the needed parameters:
 
@@ -311,7 +355,7 @@ In order for a request protected by an HTTP Message Signature bound access token
 - The `nonce` value has not been previously used within the time validity window of this request
 - The `tag` value is "httpsig-oauth"
 - The covered components and parameters include all items enumerated in {{presenting}}, including the Authorization header field
-- The `alg`, `keyid`, and `pub` parameters are not present
+- The `alg`, `jws_alg`, `keyid`, and `pub` parameters are not present
 
 The last of these checks, and the corresponding checks in {{issuing}}, are required rather than optional: {{Section 3.2.1 of HTTPSIG}} allows an application to impose requirements beyond those of {{HTTPSIG}}, but requires that it enforce them during verification and fail any signature that does not conform.
 
@@ -339,7 +383,7 @@ The RS then calculates the signature validation against the signature base using
 
 # IANA Considerations {#IANA}
 
-\[\[ TBD: register the token type and new parameters into their appropriate registries, as well as the JWT and introspection parameters needed for confirmation methods. This includes registering the `pub` signature parameter defined in {{embed-keys}} in the "HTTP Signature Metadata Parameters" registry established by {{HTTPSIG}}. \]\]
+\[\[ TBD: register the token type and new parameters into their appropriate registries, as well as the JWT and introspection parameters needed for confirmation methods. This includes registering the `jws_alg` and `pub` signature parameters defined in {{runtime}} in the "HTTP Signature Metadata Parameters" registry established by {{HTTPSIG}}. The confirmation method reuses the existing `jwk` member of {{POPKEY}} and needs no new registration. \]\]
 
 # Security Considerations {#Security}
 
@@ -366,10 +410,13 @@ The RS then calculates the signature validation against the signature base using
 - -03
     - Added co-authors
     - Changed inline key presentation from a header field carrying a JWK to a single `pub` signature parameter carrying the raw public key
-    - Limited the inline key representation to ECDSA, Ed25519, and ML-DSA
-    - Required the `alg` signature parameter for runtime key introduction
-    - Removed `keyid` from runtime key introduction and from token presentation
+    - Required the `jws_alg` signature parameter for runtime key introduction
+    - Removed `keyid` entirely; the key is presented to the AS and carried in the token binding for the RS
     - Required the bound key to be asymmetric, disallowing shared secrets
+    - Named signature algorithms with JWS algorithm identifiers throughout, using the JOSE algorithms of Section 3.3.7 of RFC 9421 and dropping the `alg` signature parameter
+    - Required fully specified algorithm identifiers
+    - Defined reconstruction of a JWK from a runtime-introduced key
+    - Carried the bound key in the `jwk` confirmation method of RFC 7800
 
 - -02
     - Editorial fixes

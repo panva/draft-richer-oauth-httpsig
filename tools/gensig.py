@@ -644,6 +644,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
                         "Implies --include-alg-param and --no-keyid.")
     p.add_argument("--no-keyid", action="store_true",
                    help="Omit the 'keyid' parameter from Signature-Input")
+    p.add_argument("--jws-alg",
+                   help="Name the algorithm with a JWS alg value in the "
+                        "'jws_alg' parameter instead of the 'alg' parameter")
     p.add_argument("--output", "-o", type=Path, default=None,
                    help="Output file (default: stdout)")
     p.add_argument("--width", "-w", type=int, default=69,
@@ -688,8 +691,10 @@ def main() -> None:
         digest_value = content_digest_sha256(request.body or b"")
         request.headers["Content-Digest"] = digest_value
 
-    # --runtime-key forces the alg parameter to be present
-    include_alg = args.include_alg_param or args.runtime_key
+    # --runtime-key forces an algorithm parameter to be present. With
+    # --jws-alg the algorithm is a JWS value, which RFC9421 Section 3.3
+    # does not permit in `alg`, so it goes in `jws_alg` instead.
+    include_alg = (args.include_alg_param or args.runtime_key) and not args.jws_alg
 
     # Build signer
     signer = InspectableSigner(
@@ -706,6 +711,9 @@ def main() -> None:
         if key.public_pem is None:
             raise SystemExit("--runtime-key requires a key with public material")
         signer.extra_params = runtime_key_params(key.public_pem, key.algorithm)
+        if args.jws_alg:
+            signer.extra_params = collections.OrderedDict(
+                [("jws_alg", args.jws_alg)] + list(signer.extra_params.items()))
 
     created_dt = (
         datetime.datetime.fromtimestamp(args.created)
