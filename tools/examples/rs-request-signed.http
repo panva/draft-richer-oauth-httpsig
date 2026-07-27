@@ -5,7 +5,7 @@ Host: example.com
 Date: Mon, 20 Apr 2026 02:07:55 GMT
 Authorization: HTTPSig 2340897.34j123-134uh2345n
 Signature-Input: sig1=("@method" "@target-uri" "authorization")\
-  ;created=1776650875;keyid="test-key-ecdsa-p256"\
-  ;nonce="k9Jyxempel2305Nmx7Rk";tag="httpsig-oauth"
-Signature: sig1=:ggBLokBFCW7NcE4z1P5zV1wn7vmnRADiMcpAVFb1q8kOQ3nlhXqQ\
-  c9LPWdz1h4FGRtImK9LqNdDdpn9G4o9zRw==:
+  ;created=1776650875;nonce="k9Jyxempel2305Nmx7Rk"\
+  ;tag="httpsig-oauth"
+Signature: sig1=:ZT/aeezwK0q2jRs58DR0D0ZTwVcBLuOy4UU/OTUaACWaCDASsFP\
+  o/wFysJ8AH8Sby4wSH3bAb55i0oVWFqmEBg==:

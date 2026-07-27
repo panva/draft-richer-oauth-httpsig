@@ -17,8 +17,8 @@ py() { python3 "$gensig" "$@"; }
 
 # --- Token request (runtime Ed25519 key) -----------------------------------
 # #2 Content-Digest of the form body and #3 the signed token request.
-# The runtime key is embedded as pub_key_a + keyid params (no Signature-Key
-# header); the alg param is forced on by --runtime-key.
+# The runtime key is embedded in the pub param; --runtime-key forces the alg
+# param on and drops keyid.
 py "$ex/token-request.http" \
     --key "$ex/token-key.jwk" \
     --covered @method @target-uri content-digest authorization \
@@ -29,12 +29,13 @@ py "$ex/token-request.http" \
     --out-digest "$ex/content-digest.hdr" \
     --out-signed "$ex/token-request-signed.http"
 
-# --- Presenting the bound token (Ed25519, keyid only) ----------------------
-# #7 (also reused verbatim for #8). Token is already bound, so no key is
-# embedded here.
+# --- Presenting the bound token (Ed25519) ----------------------------------
+# #7 (also reused verbatim for #8). The token is already bound, so neither the
+# key nor an identifier for it appears on the wire.
 py "$ex/rs-request.http" \
     --key "$ex/token-key.jwk" \
     --covered @method @target-uri authorization \
+    --no-keyid \
     --tag httpsig-oauth \
     --nonce k9Jyxempel2305Nmx7Rk \
     --created 1776650875 \
@@ -46,6 +47,7 @@ py "$ex/rs-request.http" \
     --key "$ex/test-key-ecdsa-p256.pem" \
     --key-id test-key-ecdsa-p256 \
     --covered @method @target-uri authorization \
+    --no-keyid \
     --tag httpsig-oauth \
     --nonce k9Jyxempel2305Nmx7Rk \
     --created 1776650875 \
