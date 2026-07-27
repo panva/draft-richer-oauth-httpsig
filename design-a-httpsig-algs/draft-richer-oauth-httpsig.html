@@ -1,0 +1,2115 @@
+<!DOCTYPE html>
+<html lang="en" class="Internet-Draft">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>OAuth Proof of Possession Tokens with HTTP Message Signatures</title>
+<meta content="Justin Richer" name="author">
+<meta content="Aaron Parecki" name="author">
+<meta content="Paul Bastian" name="author">
+<meta content="
+       This extension to the OAuth 2.0 authorization framework defines a method for using
+HTTP Message Signatures to bind access tokens to keys held by OAuth 2.0 clients. 
+    " name="description">
+<meta content="xml2rfc 3.34.0" name="generator">
+<meta content="Internet-Draft" name="keyword">
+<meta content="draft-richer-oauth-httpsig-latest" name="ietf.draft">
+<!-- Generator version information:
+  xml2rfc 3.34.0
+    Python 3.14.5
+    ConfigArgParse 1.7.5
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.1.1
+    natsort 8.4.0
+    platformdirs 4.10.1
+    pycountry 24.6.1
+    PyYAML 6.0.3
+    requests 2.33.1
+    wcwidth 0.8.2
+-->
+<link href="draft-richer-oauth-httpsig.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Lora SemiBold'), local('Lora-SemiBold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-semibold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+}
+
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-greek.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-greek.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  color-scheme: light dark;
+  --background-color: #fff;
+  --text-color: #222;
+  --title-color: #191919;
+  --link-color: #2a6496;
+  --highlight-color: #f9f9f9;
+  --line-color: #eee;
+  --pilcrow-weak: #ddd;
+  --pilcrow-strong: #bbb;
+  --small-font-size: 14.5px;
+  --font-mono: 'Oxygen Mono', monospace;
+  --font-title: "Sofia Sans Semi Condensed", sans-serif;
+  scrollbar-color: #bbb #eee;
+}
+body {
+  max-width: 600px;
+  margin: 75px auto;
+  padding: 0 5px;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  font: 16px/22px "Lora", serif;
+  scroll-behavior: smooth;
+}
+
+.ears {
+  display: none;
+}
+
+/* headings */
+section {
+  clear: both;
+}
+.section-number {
+  padding-right: 0.5em;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-title);
+  font-weight: 680;
+  margin: 0.8em 0 0.3em;
+  font-size-adjust: 0.5;
+  color: var(--title-color);
+}
+h1 {
+  &#title {
+    font-size: 32px;
+    line-height: 40px;
+    clear: both;
+    margin: 1.5em 0 0.2em;
+  }
+  &#rfcnum {
+    margin: 1.5em 0 0.2em;
+    & + h1#title {
+      margin: 0.2em 0;
+    }
+  }
+}
+
+h1, h2, h3 {
+  font-size: 22px;
+  line-height: 27px;
+}
+h4, h5, h6 {
+  font-size: 20px;
+  line-height: 24px;
+}
+
+/* general structure */
+.author {
+  padding-bottom: 0.3em;
+  vertical-align: top;
+}
+#abstract+p {
+  font-size: 18px;
+  line-height: 24px;
+  & code, & samp, & tt {
+    font-size: 16px;
+    line-height: 0;
+  }
+}
+
+p {
+  padding: 0;
+  margin: 0.5em 0;
+  text-align: left;
+}
+div {
+  margin: 0;
+}
+.alignRight {
+  margin: 1em 0;
+  &.art-text {
+    background-color: var(--highlight-color);
+    border: 1px solid var(--line-color);
+    border-radius: 3px;
+    padding: 0.5em 1em 0;
+    margin-bottom: 0.5em;
+    & pre {
+      padding: 0;
+      width: auto;
+    }
+  }
+  & > *:first-child {
+    border: none;
+    margin: 0;
+    float: right;
+    clear: both;
+  }
+  & > *:nth-child(2) {
+    clear: both;
+    display: block;
+    border: none;
+  }
+}
+svg {
+  display: block;
+  /* font-family isn't space-separated, but =~ will have to do */
+  &[font-family~="monospace" i], & [font-family~="monospace" i] {
+    font-family: var(--font-mono);
+  }
+}
+.alignCenter {
+  margin: 1em 0;
+  &.art-text {
+    background-color: var(--highlight-color);
+    border: 1px solid var(--line-color);
+    border-radius: 3px;
+    padding: 0.5em 1em 0;
+    margin-bottom: 0.5em;
+    & pre {
+      padding: 0;
+      width: auto;
+    }
+  }
+  & > *:first-child {
+    border: none;
+    /* this isn't optimal, but it's an existence proof.  PrinceXML doesn't
+       support flexbox yet.
+    */
+    display: table;
+    margin: 0 auto;
+  }
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 0.5em 2em;
+  & :is(ol, ul) {
+    margin-left: 1em;
+  }
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+  & li {
+    margin-top: 0.5em;
+  }
+}
+:is(ul, ol).compact, .ulCompact, .olCompact {
+  margin: 0 0 0 2em;
+  & li {
+    margin: 0;
+    & :first-child { margin-top: 0; }
+    & :last-child { margin-bottom: 0; }
+  }
+}
+
+/* definition lists */
+dl {
+  clear: left;
+  --indent: 3ch;
+  /* --indent: attr(indent ch); not supported in any browser, but we can dream */
+  &.olPercent {
+    --indent: 5ch;
+    & > dt {
+      min-width: calc(var(--indent) - 2ch);
+      float: none;
+    }
+  }
+
+  dl > dd > & {
+    margin-top: 0.5em;
+    margin-bottom: 0;
+  }
+
+  &:not(.dlNewline) > dt {
+    float: left;
+    margin-right: 2ch;
+    min-width: 8ch;
+  }
+  & > dd {
+    margin-bottom: .8em;
+    margin-left: var(--indent) !important; /* stupid element overrides */
+    min-height: 2ex;
+  }
+}
+:is(dl.compact, .dlCompact) > dd {
+  margin-bottom: 0;
+  & > :is(:first-child, .break:first-child + *) {
+    margin-top: 0;
+  }
+  & > :is(:last-child) {
+    margin-bottom: 0;
+  }
+}
+:is(dd, span).break {
+  display: none;
+}
+
+/* links */
+a {
+  text-decoration: none;
+  &[href] {
+    color: var(--link-color);
+    &:hover { text-decoration: underline; }
+    &.selfRef {
+      color: var(--text-color);
+      &:hover {
+        text-decoration: none;
+        background-color: var(--highlight-color);
+      }
+    }
+  }
+}
+.iref + a[href].internal {
+  color: var(--text-color);
+}
+a.xref:is(.cite, .auto), :is(#status-of-memo, #copyright) a {
+  white-space: nowrap;
+}
+
+/* Figures */
+tt, code, pre {
+  background-color: var(--highlight-color);
+  font: 14px/22px var(--font-mono);
+}
+tt, code {
+  /* changing the font for inline elements leads to different ascender
+     and descender heights; as we want to retain baseline alignment,
+     remove leading to avoid altering the final height of lines
+     note: this fails if these blocks take an entire line,
+     a different solution would be great */
+  line-height: 0;
+}
+:is(h1, h2, h3, h4, h5, h6) :is(tt, code) {
+  font-size: 84%;
+}
+pre {
+  border: 1px solid var(--line-color);
+  font-size: 13.5px;
+  line-height: 16px;
+  letter-spacing: -0.2px;
+  margin: 5px;
+  padding: 5px;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0.5em 0;
+  padding: 0;
+  & blockquote {
+    margin: 0.8em 0.4em 0.4em;
+  }
+}
+figcaption, caption {
+  font-style: italic;
+  margin: 0.5em 1.5em;
+  text-align: left;
+  caption-side: bottom;
+}
+@media screen {
+  /* Auto-collapse boilerplate. */
+  :is(#status-of-memo, #copyright) {
+    & p {
+      margin: -2px 0;
+      max-height: 0;
+      transition: max-height 2s ease, margin 0.5s ease 0.5s;
+      overflow: hidden;
+    }
+    &:hover p,
+    & h2:target ~ p {
+      margin: 0.5em 0;
+      max-height: 500px;
+      overflow: auto;
+    }
+  }
+  pre, svg {
+    display: inline-block;
+    /* In the horizontal direction, sometimes people make over-sized figures.
+       Scrollbars for those is therefore necessary: auto adds them as necessary..
+       In the vertical direction, the line-height can combine with the font
+       asender/descender height to produce scrollbars: hidden avoids that. */
+    overflow: auto hidden;
+  }
+  pre {
+    max-width: 100%;
+    width: calc(100% - 22px - 1em);
+  }
+  svg {
+    max-width: calc(100% - 22px - 1em);
+  }
+  figure pre {
+    display: block;
+    width: calc(100% - 25px);
+  }
+  :is(pre, svg) + .pilcrow {
+    display: inline-block;
+    vertical-align: text-bottom;
+    padding-bottom: 8px;
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 0 2em;
+  font-style: italic;
+}
+blockquote {
+  margin: 1em 0;
+  border-left: 2px var(--pilcrow-strong) solid;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+
+/* tables */
+table {
+  width: auto;
+  max-width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  &.right { margin-left: auto; }
+  &.center { margin-left: auto; margin-right: auto; }
+  &.left { margin-right: auto; }
+  & .text-left { text-align: left; }
+  & .text-center { text-align: center; }
+  & .text-right { text-align: right; }
+  & caption {
+    margin: 0;
+    padding: 3px 0 3px 1em;
+  }
+  & p { margin: 0; }
+}
+
+thead, tbody {
+  border: 1px solid var(--line-color);
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 5px 10px;
+}
+th {
+  background-color: var(--line-color);
+}
+:is(tr:nth-child(2n), thead+tbody > tr:nth-child(2n+1)) > td {
+  background-color: var(--background-color);
+}
+:is(tr:nth-child(2n+1), thead+tbody > tr:nth-child(2n)) > td {
+  background-color: var(--highlight-color);
+}
+
+/* pilcrow */
+a.pilcrow {
+  margin-left: 3px;
+  opacity: 0.2;
+  user-select: none;
+  &[href] {
+    color: var(--pilcrow-weak);
+    &:hover { text-decoration: none; }
+  }
+  @media not print {
+    :hover > &, &:focus {
+      opacity: 1;
+    }
+    &[href]:hover {
+      color: var(--pilcrow-strong);
+      background-color: transparent;
+    }
+  }
+  @media print {
+    display: none;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid var(--line-color);
+}
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: 600;
+  font-size: var(--small-font-size);
+}
+.role {
+  font-variant: all-small-caps;
+}
+sub, sup {
+  line-height: 1;
+  font-size: 80%;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: var(--small-font-size);
+  line-height: 18px;
+  --identifier-width: 15ch;
+  & dt {
+    width: var(--identifier-width);
+    min-width: var(--identifier-width);
+    clear: left;
+    float: left;
+    text-align: right;
+    margin-right: 1ch;
+  }
+  & dd {
+    margin: 0;
+    margin-left: calc(1em + var(--identifier-width)) !important;
+    min-width: 5em;
+  }
+  & .authors {
+    & .author {
+      display: inline-block;
+      margin-right: 1.5em;
+    }
+    & .org {
+      font-style: italic;
+    }
+  }
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #999;
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+  & .prepared {
+    float: right;
+  }
+}
+
+/* table of contents */
+#toc {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+
+  & nav {
+    & ul {
+      margin: 0 0.5em 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    & li {
+      line-height: 1.3em;
+      margin: 2px 0;
+      padding-left: 1.2em;
+      text-indent: -1.2em;
+    }
+  }
+  & a.xref {
+    white-space: normal;
+  }
+}
+
+.references {
+  & > dt {
+    text-align: right;
+    font-weight: bold;
+    min-width: 10ch;
+    margin-right: 1.5ch;
+    &:target::before {
+      content: "⇒";
+      margin: 0 10px 0 -25px;
+    }
+  }
+  & > dd {
+    margin-left: 12ch !important;
+    overflow: visible;
+    & .refInstance {
+      margin-bottom: 0.8em;
+    }
+    & .ascii {
+      margin-bottom: 0.25em;
+    }
+  }
+}
+
+#rfc\.index\.index + ul {
+  margin-left: 0;
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  max-width: 20em;
+  margin: 1em auto 1em 0;
+
+  & .nameRole {
+    font-weight: 700;
+    margin-left: 0;
+  }
+  & .label {
+    margin: 0.5em 0;
+  }
+  & .type {
+    display: none;
+  }
+  & .alternative-contact {
+    margin: 0.5em 0 0.25em 0;
+  }
+  & .non-ascii {
+    margin: 0 0 0 2em;
+  }
+  & div.left {
+    text-align: left;
+  }
+  & div.right {
+    text-align: right;
+  }
+}
+
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+@media (min-width: 500px) {
+  #authors-addresses {
+    & > section {
+      column-count: 2;
+      column-gap: 20px;
+    }
+    & > section > h2 {
+      column-span: all;
+    }
+    /* hack for break-inside: avoid-column */
+    & address {
+      display: inline-block;
+      break-inside: avoid-column;
+    }
+  }
+}
+
+/* Comments */
+.rfcEditorRemove {
+  & p:first-of-type {
+    font-style: italic;
+  }
+}
+.cref {
+  background-color: rgba(249, 232, 105, 0.3);
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+
+@media screen {
+  #toc {
+    & nav {
+      font-family: var(--font-title);
+      font-weight: 360;
+      & > ul { margin-bottom: 2em; }
+      & ul {
+        margin: 0 0 0 4px;
+        & :is(p, li) {
+          margin: 2px 0;
+        }
+      }
+    }
+    & a.toplink {
+      float: right;
+    }
+  }
+}
+@media not screen {
+  #toc a.toplink {
+    display: none;
+  }
+}
+
+
+/* TOC layout for smaller screens */
+@media screen and (max-width: 929px) {
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 1px 0 0 0;
+    margin: 0;
+    border-bottom: 1px solid #ccc;
+    opacity: 0.6;
+    & h2 {
+      margin: 0;
+      padding: 2px 0 2px 6px;
+      padding-right: 1em;
+      font-size: 18px;
+      line-height: 24px;
+      min-width: 190px;
+      text-align: right;
+      background-color: #444;
+      color: white;
+      cursor: pointer;
+      &::before { /* css hamburger */
+        float: right;
+        position: relative;
+        width: 1em;
+        height: 1px;
+        left: -164px;
+        margin: 8px 0 0 0;
+        background: white none repeat scroll 0 0;
+        box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+        content: "";
+      }
+    }
+    & nav {
+      display: none;
+      background-color: var(--background-color);
+      padding: 0.5em 1em 1em;
+      overflow: auto;
+      overscroll-behavior: contain;
+      height: calc(100vh - 48px);
+      border-left: 1px solid #ddd;
+    }
+    &.active {
+      opacity: 1;
+      & nav { display: block; }
+    }
+    /* Make the collapsed ToC header render white on gray also when it's a link */
+    & h2 a,
+    & h2 a:is(:link, :focus, :hover),
+    & a.toplink,
+    & a.toplink:hover {
+      color: white;
+      background-color: #444;
+      text-decoration: none;
+    }
+    & a.toplink {
+      margin: 2px 0.5em 0;
+    }
+  }
+}
+
+/* TOC layout for wide screens */
+@media screen and (min-width: 930px) {
+  body {
+    padding-right: 360px;
+    padding-right: calc(min(180px + 20%, 500px));
+  }
+  #toc {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    right: calc(50vw - 480px);
+    width: 312px;
+    margin: 0;
+    padding: 0;
+    z-index: 1;
+    & h2 {
+      margin: 0;
+      padding: 0.25em 1em 1em 0;
+    }
+    & nav {
+      display: block;
+      height: calc(90vh - 84px);
+      bottom: 0;
+      padding: 0.5em 0 2em;
+      overflow: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+    }
+    & a.toplink {
+      margin: 8px 0.5em 0;
+    }
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc {
+    page-break-before: always;
+    border-top: none;
+    padding-top: 0;
+  }
+  #n-introduction {
+    page-break-before: always;
+  }
+  figure, pre, .vcard {
+    page-break-inside: avoid;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  :is(h2, h3, h4, h5, h6)+*, dd {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+}
+
+/* Dark mode. */
+@media (prefers-color-scheme: dark) {
+:root {
+  --background-color: #121212;
+  --text-color: #f0f0f0;
+  --title-color: #fff;
+  --link-color: #4da4f0;
+  --highlight-color: #282828;
+  --line-color: #444;
+  --pilcrow-weak: #444;
+  --pilcrow-strong: #666;
+  scrollbar-color: #777 #333;
+}
+}
+
+/* SVG Trick: a prefix match works because only black and white are allowed */
+svg {
+  & :is([stroke="black"], [stroke^="#000"]) {
+    stroke: var(--text-color);
+  }
+  & :is([stroke="white"], [stroke^="#fff"]) {
+    stroke: var(--background-color);
+  }
+  & :is([fill="black"], [fill^="#000"], :not([fill])) {
+    fill: var(--text-color);
+  }
+  & :is([fill="white"], [fill^="#fff"]) {
+    fill: var(--background-color);
+  }
+}
+</style>
+
+</head>
+<body class="xml2rfc">
+<table class="ears">
+<thead><tr>
+<td class="left">Internet-Draft</td>
+<td class="center">OAuth Proof of Possession Tokens with HT</td>
+<td class="right">July 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Richer, et al.</td>
+<td class="center">Expires 28 January 2027</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-workgroup">Workgroup:</dt>
+<dd class="workgroup">OAUTH</dd>
+<dt class="label-internet-draft">Internet-Draft:</dt>
+<dd class="internet-draft">draft-richer-oauth-httpsig-latest</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-07-27" class="published">27 July 2026</time>
+    </dd>
+<dt class="label-intended-status">Intended Status:</dt>
+<dd class="intended-status">Standards Track</dd>
+<dt class="label-expires">Expires:</dt>
+<dd class="expires"><time datetime="2027-01-28">28 January 2027</time></dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">J. Richer, <span class="editor">Ed.</span>
+</div>
+<div class="org">MongoDB</div>
+</div>
+<div class="author">
+      <div class="author-name">A. Parecki</div>
+<div class="org">Okta</div>
+</div>
+<div class="author">
+      <div class="author-name">P. Bastian</div>
+<div class="org">Bundesdruckerei</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="title">OAuth Proof of Possession Tokens with HTTP Message Signatures</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This extension to the OAuth 2.0 authorization framework defines a method for using
+HTTP Message Signatures to bind access tokens to keys held by OAuth 2.0 clients.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<section class="note rfcEditorRemove" id="section-note.1">
+      <h2 id="name-discussion-venues">
+<a href="#name-discussion-venues" class="section-name selfRef">Discussion Venues</a>
+      </h2>
+<p id="section-note.1-1">This note is to be removed before publishing as an RFC.<a href="#section-note.1-1" class="pilcrow">¶</a></p>
+<p id="section-note.1-2">Discussion of this document takes place on the
+    Web Authorization Protocol Working Group mailing list (oauth@ietf.org),
+    which is archived at <span><a href="https://mailarchive.ietf.org/arch/browse/oauth/">https://mailarchive.ietf.org/arch/browse/oauth/</a></span>.<a href="#section-note.1-2" class="pilcrow">¶</a></p>
+<p id="section-note.1-3">Source for this draft and an issue tracker can be found at
+    <span><a href="https://github.com/jricher/draft-richer-oauth-httpsig">https://github.com/jricher/draft-richer-oauth-httpsig</a></span>.<a href="#section-note.1-3" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+        This Internet-Draft is submitted in full conformance with the
+        provisions of BCP 78 and BCP 79.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+        Internet-Drafts are working documents of the Internet Engineering Task
+        Force (IETF). Note that other groups may also distribute working
+        documents as Internet-Drafts. The list of current Internet-Drafts is
+        at <span><a href="https://datatracker.ietf.org/drafts/current/">https://datatracker.ietf.org/drafts/current/</a></span>.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+        Internet-Drafts are draft documents valid for a maximum of six months
+        and may be updated, replaced, or obsoleted by other documents at any
+        time. It is inappropriate to use Internet-Drafts as reference
+        material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-4">
+        This Internet-Draft will expire on 28 January 2027.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-requesting-an-http-message-" class="internal xref">Requesting an HTTP Message Signature Bound Access Token</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
+                <p id="section-toc.1-1.2.2.1.1" class="keepWithNext"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-presenting-the-key" class="internal xref">Presenting the Key</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2">
+                <p id="section-toc.1-1.2.2.2.1"><a href="#section-2.2" class="auto internal xref">2.2</a>.  <a href="#name-pre-registration-of-keys" class="internal xref">Pre-Registration of Keys</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2.2.1">
+                    <p id="section-toc.1-1.2.2.2.2.1.1"><a href="#section-2.2.1" class="auto internal xref">2.2.1</a>.  <a href="#name-example-client-registration" class="internal xref">Example Client Registration</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.3">
+                <p id="section-toc.1-1.2.2.3.1"><a href="#section-2.3" class="auto internal xref">2.3</a>.  <a href="#name-token-request-key-introduct" class="internal xref">Token Request Key Introduction</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.4">
+                <p id="section-toc.1-1.2.2.4.1"><a href="#section-2.4" class="auto internal xref">2.4</a>.  <a href="#name-token-request" class="internal xref">Token Request</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-signature-algorithms" class="internal xref">Signature Algorithms</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-http-signature-public-keys" class="internal xref">HTTP Signature Public Keys</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-key-thumbprint" class="internal xref">Key Thumbprint</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-json-representation" class="internal xref">JSON Representation</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-embedding-a-public-key-valu" class="internal xref">Embedding a Public Key Value</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-ecdsa" class="internal xref">ECDSA</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-ed25519" class="internal xref">Ed25519</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3">
+                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-ml-dsa" class="internal xref">ML-DSA</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-issuing-an-http-message-sig" class="internal xref">Issuing an HTTP Message Signature Bound Access Token</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-encoding-confirmation-in-a-" class="internal xref">Encoding Confirmation in a JWT</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-returning-confirmation-in-t" class="internal xref">Returning Confirmation in Token Introspection</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-presenting-an-http-message-" class="internal xref">Presenting an HTTP Message Signature Bound Access Token</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-validating-an-http-message-" class="internal xref">Validating an HTTP Message Signature Bound Resource Request</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-acknowledgements" class="internal xref">Acknowledgements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#section-11" class="auto internal xref">11</a>. <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#section-12" class="auto internal xref">12</a>. <a href="#name-privacy-considerations" class="internal xref">Privacy Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#section-13" class="auto internal xref">13</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.1">
+                <p id="section-toc.1-1.13.2.1.1"><a href="#section-13.1" class="auto internal xref">13.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.2">
+                <p id="section-toc.1-1.13.2.2.1"><a href="#section-13.2" class="auto internal xref">13.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14">
+            <p id="section-toc.1-1.14.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-document-history" class="internal xref">Document History</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15">
+            <p id="section-toc.1-1.15.1"><a href="#appendix-B" class="auto internal xref">Appendix B</a>.  <a href="#name-potential-other-work" class="internal xref">Potential Other Work</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.1">
+                <p id="section-toc.1-1.15.2.1.1"><a href="#appendix-B.1" class="auto internal xref">B.1</a>.  <a href="#name-client-authentication" class="internal xref">Client Authentication</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.2">
+                <p id="section-toc.1-1.15.2.2.1"><a href="#appendix-B.2" class="auto internal xref">B.2</a>.  <a href="#name-as-responses" class="internal xref">AS Responses</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.3">
+                <p id="section-toc.1-1.15.2.3.1"><a href="#appendix-B.3" class="auto internal xref">B.3</a>.  <a href="#name-non-repudiation-of-requests" class="internal xref">Non-Repudiation of Requests</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.4">
+                <p id="section-toc.1-1.15.2.4.1"><a href="#appendix-B.4" class="auto internal xref">B.4</a>.  <a href="#name-par-key-introduction" class="internal xref">PAR Key Introduction</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.5">
+                <p id="section-toc.1-1.15.2.5.1"><a href="#appendix-B.5" class="auto internal xref">B.5</a>.  <a href="#name-accept-signature-support" class="internal xref">Accept-Signature Support</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16">
+            <p id="section-toc.1-1.16.1"><a href="#appendix-C" class="auto internal xref">Appendix C</a>.  <a href="#name-test-vectors" class="internal xref">Test Vectors</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.17">
+            <p id="section-toc.1-1.17.1"><a href="#appendix-D" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">The OAuth 2.0 framework provides methods for clients to get delegated access tokens from an
+authorization server for accessing protected resources.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">OAuth access tokens can be bearer tokens, or bound to a variety of mechanisms including mutual TLS, DPoP, or other presentation mechanisms.
+Bearer tokens are simple to implement but also have the significant security downside of
+allowing anyone who sees the access token to use that token.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3"><span>[<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span> defines a generic mechanism that is used to sign HTTP requests and responses.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">This specification defines means to bind access tokens to a key held by the client, a token type
+value, a token response for indicating that a token is meant to be used with <span>[<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span>
+presentation, and a method for presenting bound access tokens in HTTP requests using <span>[<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span>.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">This work complements and builds on experience with <span>[<a href="#DPOP" class="cite xref">DPOP</a>]</span> and <span>[<a href="#MTLS" class="cite xref">MTLS</a>]</span>, as well as
+implementations of <span>[<a href="#I-D.ietf-oauth-signed-http-request" class="cite xref">I-D.ietf-oauth-signed-http-request</a>]</span>, a spiritual predecessor to this
+specification and other forms of OAuth proof-of-possession work.<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6">[[ Editor's note: we want to give developers clear guidance on when to use HTTPSig vs. DPoP vs. mTLS vs. Bearer vs. whatever else ]]<a href="#section-1-6" class="pilcrow">¶</a></p>
+<div id="terminology">
+<section id="section-1.1">
+        <h3 id="name-terminology">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+        </h3>
+<p id="section-1.1-1">The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
+NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED",
+"MAY", and "OPTIONAL" in this document are to be interpreted as
+described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they
+appear in all capitals, as shown here.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+<p id="section-1.1-2">This document contains non-normative examples of partial and complete HTTP messages, JSON structures, URLs, query components, keys, and other elements. Some examples use a single trailing backslash '' to indicate line wrapping for long values, as per <span>[<a href="#RFC8792" class="cite xref">RFC8792</a>]</span>. The <code>\</code> character and leading spaces on wrapped lines are not part of the value.<a href="#section-1.1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="binding">
+<section id="section-2">
+      <h2 id="name-requesting-an-http-message-">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-requesting-an-http-message-" class="section-name selfRef">Requesting an HTTP Message Signature Bound Access Token</a>
+      </h2>
+<p id="section-2-1">To bind an access token to a key, the AS needs to know which key to bind to which token. This specification defines two common methods depending on the needs of the client:<a href="#section-2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2-2.1">
+          <p id="section-2-2.1.1">A static method that depends on a key thumbprint registered as part of the client registration<a href="#section-2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-2-2.2">
+          <p id="section-2-2.2.1">A runtime method that allows a client to introduce key material during the token request phase of <span>[<a href="#OAUTH" class="cite xref">OAUTH</a>]</span><a href="#section-2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-2-3">As part of its registration, a client MUST indicate which method it will use, using either the <code>httpsig_key_binding_method</code> client registration metadata parameter defined (TBD) in <a href="#IANA" class="auto internal xref">Section 10</a> when using Dynamic Client Registration (<span>[<a href="#DYNREG" class="cite xref">DYNREG</a>]</span>) or Client ID Metadata Document (<span>[<a href="#I-D.ietf-oauth-client-id-metadata-document" class="cite xref">I-D.ietf-oauth-client-id-metadata-document</a>]</span>), or via an out of band method.<a href="#section-2-3" class="pilcrow">¶</a></p>
+<p id="section-2-4">[[ Editor's note: do we want to add an AS/RS metadata parameter to signal support for each type? ]]<a href="#section-2-4" class="pilcrow">¶</a></p>
+<p id="section-2-5">[[ Editor's note: Are there any other patterns of key introduction we should cover? I put PAR in the appendix as a note. ]]<a href="#section-2-5" class="pilcrow">¶</a></p>
+<div id="present-key">
+<section id="section-2.1">
+        <h3 id="name-presenting-the-key">
+<a href="#section-2.1" class="section-number selfRef">2.1. </a><a href="#name-presenting-the-key" class="section-name selfRef">Presenting the Key</a>
+        </h3>
+<p id="section-2.1-1">Under both key binding methods the client presents its key, as defined in <a href="#key" class="auto internal xref">Section 4</a>, to the AS in the token request, in two signature parameters attached to the signature input: <code>alg</code> as a String, and <code>pub</code> as a Byte Sequence.<a href="#section-2.1-1" class="pilcrow">¶</a></p>
+<p id="section-2.1-2">The key is presented in full, so the AS has nothing to dereference and the client MUST NOT include the <code>keyid</code> signature parameter.<a href="#section-2.1-2" class="pilcrow">¶</a></p>
+<p id="section-2.1-3">The two methods differ only in what the AS does with the presented key.<a href="#section-2.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="preregister">
+<section id="section-2.2">
+        <h3 id="name-pre-registration-of-keys">
+<a href="#section-2.2" class="section-number selfRef">2.2. </a><a href="#name-pre-registration-of-keys" class="section-name selfRef">Pre-Registration of Keys</a>
+        </h3>
+<p id="section-2.2-1">A client pre-registering its key for <span>[<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span> binding MUST publish the thumbprint of that key, as defined in <a href="#thumbprint" class="auto internal xref">Section 4.1</a>, in the <code>httpsig_bound_access_token_thumbprint</code> field of its client metadata. A client registers exactly one thumbprint.<a href="#section-2.2-1" class="pilcrow">¶</a></p>
+<p id="section-2.2-2">The client does not publish the key itself. It presents the key in the token request as in <a href="#present-key" class="auto internal xref">Section 2.1</a>, and the AS binds a token to that key only if its thumbprint matches the registered value.<a href="#section-2.2-2" class="pilcrow">¶</a></p>
+<p id="section-2.2-3">Because the algorithm identifier is an input to the thumbprint, the registered value commits the client to a single algorithm as well as to a single key.<a href="#section-2.2-3" class="pilcrow">¶</a></p>
+<p id="section-2.2-4">Note that pre-registration can occur statically or dynamically (such as by using <span>[<a href="#DYNREG" class="cite xref">DYNREG</a>]</span>), as long as the thumbprint is associated with the client's <code>client_id</code> before the token request is made.<a href="#section-2.2-4" class="pilcrow">¶</a></p>
+<div id="example-client-registration">
+<section id="section-2.2.1">
+          <h4 id="name-example-client-registration">
+<a href="#section-2.2.1" class="section-number selfRef">2.2.1. </a><a href="#name-example-client-registration" class="section-name selfRef">Example Client Registration</a>
+          </h4>
+<p id="section-2.2.1-1">A client can publish the key binding parameters as part of a <span>[<a href="#I-D.ietf-oauth-client-id-metadata-document" class="cite xref">I-D.ietf-oauth-client-id-metadata-document</a>]</span>. For example, a client with the <code>client_id</code> value <code>https://client.example.com/client-metadata.json</code> would publish the following document at that URL, indicating that it uses a pre-registered key:<a href="#section-2.2.1-1" class="pilcrow">¶</a></p>
+<div class="lang-json sourcecode" id="section-2.2.1-2">
+<pre>
+{
+    "client_id": "https://client.example.com/client-metadata.json",
+    "client_name": "Example Client",
+    "httpsig_bound_access_token_thumbprint":
+        "ZfKrEwGZlbBaGH2QJnfjNCyBAO0Uz-8gPQXQOVojYzE",
+    "httpsig_key_binding_method": "preregistered"
+}
+</pre><a href="#section-2.2.1-2" class="pilcrow">¶</a>
+</div>
+<p id="section-2.2.1-3">Note that the client's <code>jwks</code> and <code>jwks_uri</code> values play no part in this binding. A client can publish them for other purposes, such as client authentication, without affecting the key bound to its access tokens.<a href="#section-2.2.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="runtime">
+<section id="section-2.3">
+        <h3 id="name-token-request-key-introduct">
+<a href="#section-2.3" class="section-number selfRef">2.3. </a><a href="#name-token-request-key-introduct" class="section-name selfRef">Token Request Key Introduction</a>
+        </h3>
+<p id="section-2.3-1">Instead of pre-registering a thumbprint, a client can introduce its key during the token request in a similar fashion as <span>[<a href="#DPOP" class="cite xref">DPOP</a>]</span>.<a href="#section-2.3-1" class="pilcrow">¶</a></p>
+<p id="section-2.3-2">A client using this method presents its key as in <a href="#present-key" class="auto internal xref">Section 2.1</a>, and the AS binds a token to the presented key subject to its own policy. No prior registration of the key or its thumbprint is required.<a href="#section-2.3-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="request">
+<section id="section-2.4">
+        <h3 id="name-token-request">
+<a href="#section-2.4" class="section-number selfRef">2.4. </a><a href="#name-token-request" class="section-name selfRef">Token Request</a>
+        </h3>
+<p id="section-2.4-1">The presence of an HTTP Message Signature with the tag <code>httpsig-oauth-token-request</code> indicates that the client is requesting a bound token. The client MUST include a message signature of the indicated key.<a href="#section-2.4-1" class="pilcrow">¶</a></p>
+<p id="section-2.4-2">Additionally, the client MUST calculate and include the digest of the request body and include it as the Content-Digest header defined in <span>[<a href="#DIGEST" class="cite xref">DIGEST</a>]</span>.<a href="#section-2.4-2" class="pilcrow">¶</a></p>
+<p id="section-2.4-3">For example, a form-encoded request body consisting of:<a href="#section-2.4-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-2.4-4">
+<pre>
+NOTE: '\' line wrapping per RFC 8792
+
+grant_type=authorization_code&amp;code=SplxlOBeZQQYbYS6WxSbIA\
+&amp;redirect_uri=https%3A%2F%2Fclient%2Eexample%2Ecom%2Fcb
+</pre><a href="#section-2.4-4" class="pilcrow">¶</a>
+</div>
+<p id="section-2.4-5">Would create the following Content-Digest header:<a href="#section-2.4-5" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-2.4-6">
+<pre>
+NOTE: '\' line wrapping per RFC 8792
+
+Content-Digest: sha-256=:4fEzRVTGqfZg7lqf/d3oxXu837pvb3L0GN24+F\
+  1VkZk=:
+</pre><a href="#section-2.4-6" class="pilcrow">¶</a>
+</div>
+<p id="section-2.4-7">A client using this method MUST sign the token endpoint request using <span>[<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span> with the appropriate key. The covered components MUST include:<a href="#section-2.4-7" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.4-8.1">
+            <p id="section-2.4-8.1.1"><code>@method</code> the HTTP method of the request<a href="#section-2.4-8.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.4-8.2">
+            <p id="section-2.4-8.2.1"><code>@target-uri</code> the full request URI of the request (note that this includes the scheme, authority, path, and query)<a href="#section-2.4-8.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.4-8.3">
+            <p id="section-2.4-8.3.1"><code>content-digest</code> the digest of the request body<a href="#section-2.4-8.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-2.4-9">The covered components MUST include the client's authentication, if available. If using HTTP Basic, this means including the <code>authorization</code> field.<a href="#section-2.4-9" class="pilcrow">¶</a></p>
+<p id="section-2.4-10">The signature MUST include the following parameters:<a href="#section-2.4-10" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-2.4-11.1">
+            <p id="section-2.4-11.1.1"><code>created</code> a timestamp for signature creation; this MUST be within a small number of seconds of issuance (e.g. 30 seconds to account for clock skew)<a href="#section-2.4-11.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.4-11.2">
+            <p id="section-2.4-11.2.1"><code>nonce</code> a random unique value that the AS can use to prevent signature replay within the small validity time window<a href="#section-2.4-11.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.4-11.3">
+            <p id="section-2.4-11.3.1"><code>tag</code> a string indicating that this is being used for requesting a bound token, MUST be the value "httpsig-oauth-token-request"<a href="#section-2.4-11.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-2.4-11.4">
+            <p id="section-2.4-11.4.1"><code>alg</code> and <code>pub</code> the client's key, as defined in <a href="#present-key" class="auto internal xref">Section 2.1</a><a href="#section-2.4-11.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-2.4-12">An example request to the token endpoint (using a runtime-provided key here) can look like the following:<a href="#section-2.4-12" class="pilcrow">¶</a></p>
+<div class="lang-http-message sourcecode" id="section-2.4-13">
+<pre>
+NOTE: '\' line wrapping per RFC 8792
+
+POST /token HTTP/1.1
+Host: server.example.com
+Authorization: Basic czZCaGRSa3F0MzpnWDFmQmF0M2JW
+Content-Type: application/x-www-form-urlencoded
+Content-Digest: sha-256=:4fEzRVTGqfZg7lqf/d3oxXu837pvb3L0GN24+F\
+  1VkZk=:
+Signature-Input: sig1=("@method" "@target-uri" "content-digest" \
+  "authorization");created=1618884473;alg="ed25519"\
+  ;nonce="b3k2pp5k7z-50gnX1b06";tag="httpsig-oauth-token-request"\
+  ;pub=:iuemcj/GhRHmY/yCsMlDNp3BQgPZDdG00VRsg/BgU3s=:
+Signature: sig1=:W1jjnCpI59MI13gajmWP9DViwQHXhQdQ8r8q+h+Drp2JbJyu/md\
+  QrMMkGuiMvkWWY/noYbi9L4cW/lTOZigsCQ==:
+
+grant_type=authorization_code&amp;code=SplxlOBeZQQYbYS6WxSbIA&amp;redirect_u\
+  ri=https%3A%2F%2Fclient%2Eexample%2Ecom%2Fcb
+</pre><a href="#section-2.4-13" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="algorithms">
+<section id="section-3">
+      <h2 id="name-signature-algorithms">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-signature-algorithms" class="section-name selfRef">Signature Algorithms</a>
+      </h2>
+<p id="section-3-1">The signature algorithms used by this specification are values from the "HTTP Signature Algorithms" registry established by <span><a href="https://rfc-editor.org/rfc/rfc9421#section-6.2" class="relref">Section 6.2</a> of [<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span>.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">The JOSE signing algorithms described in <span><a href="https://rfc-editor.org/rfc/rfc9421#section-3.3.7" class="relref">Section 3.3.7</a> of [<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span> MUST NOT be used. Those algorithms are named using JSON Web Algorithm values, which are not registered in the "HTTP Signature Algorithms" registry.<a href="#section-3-2" class="pilcrow">¶</a></p>
+<p id="section-3-3">The algorithm MUST be an asymmetric signature algorithm for which this document defines a public key encoding in <a href="#embed-keys" class="auto internal xref">Section 5</a>.<a href="#section-3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="key">
+<section id="section-4">
+      <h2 id="name-http-signature-public-keys">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-http-signature-public-keys" class="section-name selfRef">HTTP Signature Public Keys</a>
+      </h2>
+<p id="section-4-1">A public key is represented as a pair of values:<a href="#section-4-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-2.1">
+          <p id="section-4-2.1.1"><code>alg</code>: an identifier from the "HTTP Signature Algorithms" registry<a href="#section-4-2.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-4-2.2">
+          <p id="section-4-2.2.1"><code>pub</code>: the public key material for that algorithm, encoded as defined in <a href="#embed-keys" class="auto internal xref">Section 5</a><a href="#section-4-2.2.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-4-3">The two are always carried together: a <code>pub</code> value has no meaning without the <code>alg</code> that determines how to parse it.<a href="#section-4-3" class="pilcrow">¶</a></p>
+<div id="thumbprint">
+<section id="section-4.1">
+        <h3 id="name-key-thumbprint">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-key-thumbprint" class="section-name selfRef">Key Thumbprint</a>
+        </h3>
+<p id="section-4.1-1">The thumbprint of a key is the SHA-256 digest of the concatenation of:<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.1-2.1">
+            <p id="section-4.1-2.1.1">the <code>alg</code> identifier, encoded as ASCII<a href="#section-4.1-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.1-2.2">
+            <p id="section-4.1-2.2.1">a single zero octet (0x00)<a href="#section-4.1-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-4.1-2.3">
+            <p id="section-4.1-2.3.1">the <code>pub</code> octets<a href="#section-4.1-2.3.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-4.1-3">Where the thumbprint is carried as a string, it is the base64url encoding of that digest without padding.<a href="#section-4.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.1-4">The zero octet separates the two inputs so that no two distinct keys share a thumbprint. Algorithm identifiers are drawn from a registry that does not permit the zero octet, so the boundary is unambiguous.<a href="#section-4.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="key-json">
+<section id="section-4.2">
+        <h3 id="name-json-representation">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-json-representation" class="section-name selfRef">JSON Representation</a>
+        </h3>
+<p id="section-4.2-1">Where a key is carried in a JSON object, such as in an access token confirmation method, it is represented as a JSON object with two members: <code>alg</code>, the algorithm identifier as a string, and <code>pub</code>, the base64url encoding of the <code>pub</code> octets without padding.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<div class="lang-json sourcecode" id="section-4.2-2">
+<pre>
+{
+    "alg": "ed25519",
+    "pub": "iuemcj_GhRHmY_yCsMlDNp3BQgPZDdG00VRsg_BgU3s"
+}
+</pre><a href="#section-4.2-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="embed-keys">
+<section id="section-5">
+      <h2 id="name-embedding-a-public-key-valu">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-embedding-a-public-key-valu" class="section-name selfRef">Embedding a Public Key Value</a>
+      </h2>
+<p id="section-5-1">When encoding a public key value in a runtime request as in <a href="#runtime" class="auto internal xref">Section 2.3</a>, the client includes the public key material in the <code>pub</code> signature parameter attached to the signature input, encoded as a Byte Sequence as defined in <span>[<a href="#STRUCTURED" class="cite xref">STRUCTURED</a>]</span>.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">The contents of the <code>pub</code> parameter are the public key material appropriate to the signature algorithm indicated by the <code>alg</code> signature parameter, as defined in the following sections.<a href="#section-5-2" class="pilcrow">¶</a></p>
+<div id="ecdsa">
+<section id="section-5.1">
+        <h3 id="name-ecdsa">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-ecdsa" class="section-name selfRef">ECDSA</a>
+        </h3>
+<p id="section-5.1-1">If the <code>alg</code> value is <code>ecdsa-p256-sha256</code> or <code>ecdsa-p384-sha384</code>, the <code>pub</code> parameter contains the uncompressed point representation of the public key: the single octet <code>0x04</code> followed by the big-endian, zero-padded, fixed-length encodings of the key's X and Y coordinates. This is the output of the Elliptic-Curve-Point-to-Octet-String Conversion in Section 2.3.3 of <span>[<a href="#SEC1" class="cite xref">SEC1</a>]</span> with point compression off.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<p id="section-5.1-2">For <code>ecdsa-p256-sha256</code>, the X and Y values are exactly 32 octets each and the <code>pub</code> value is exactly 65 octets. For <code>ecdsa-p384-sha384</code>, the X and Y values are exactly 48 octets each and the <code>pub</code> value is exactly 97 octets.<a href="#section-5.1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="ed25519">
+<section id="section-5.2">
+        <h3 id="name-ed25519">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-ed25519" class="section-name selfRef">Ed25519</a>
+        </h3>
+<p id="section-5.2-1">If the <code>alg</code> value is <code>ed25519</code>, the <code>pub</code> parameter contains the Ed25519 public key <code>A</code>, which is the encoding of the point <code>[s]B</code> as specified in <span><a href="https://rfc-editor.org/rfc/rfc8032#section-5.1.5" class="relref">Section 5.1.5</a> of [<a href="#RFC8032" class="cite xref">RFC8032</a>]</span>.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<p id="section-5.2-2">The key value is exactly 32 octets in length.<a href="#section-5.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="ml-dsa">
+<section id="section-5.3">
+        <h3 id="name-ml-dsa">
+<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-ml-dsa" class="section-name selfRef">ML-DSA</a>
+        </h3>
+<p id="section-5.3-1">If the <code>alg</code> value indicates an ML-DSA algorithm, the <code>pub</code> parameter contains the ML-DSA public key, using the same encoding as the <code>pub</code> parameter of an AKP JSON Web Key defined in <span><a href="https://rfc-editor.org/rfc/rfc9964#section-3" class="relref">Section 3</a> of [<a href="#RFC9964" class="cite xref">RFC9964</a>]</span>, prior to its base64url encoding.<a href="#section-5.3-1" class="pilcrow">¶</a></p>
+<p id="section-5.3-2">[[ Editor's note: ML-DSA algorithm identifiers for use with <span>[<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span> are being defined in separate work; a reference will be added here once that document is available. ]]<a href="#section-5.3-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="issuing">
+<section id="section-6">
+      <h2 id="name-issuing-an-http-message-sig">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-issuing-an-http-message-sig" class="section-name selfRef">Issuing an HTTP Message Signature Bound Access Token</a>
+      </h2>
+<p id="section-6-1">The AS MUST validate the signature of the token request sent in <a href="#request" class="auto internal xref">Section 2.4</a> against the key presented in that request, using the algorithm named alongside it as in <a href="#present-key" class="auto internal xref">Section 2.1</a>.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">The request MUST fail with an error if any of the following occur:<a href="#section-6-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-6-3.1">
+          <p id="section-6-3.1.1">The <code>alg</code> or <code>pub</code> parameter is absent, or the <code>keyid</code> parameter is present<a href="#section-6-3.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-3.2">
+          <p id="section-6-3.2.1">The <code>alg</code> value is not an asymmetric algorithm for which this document defines a public key encoding in <a href="#embed-keys" class="auto internal xref">Section 5</a><a href="#section-6-3.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-3.3">
+          <p id="section-6-3.3.1">The <code>pub</code> value is not a well-formed public key for the indicated algorithm<a href="#section-6-3.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-3.4">
+          <p id="section-6-3.4.1">The client uses pre-registered keys as in <a href="#preregister" class="auto internal xref">Section 2.2</a> and the thumbprint of the presented key does not match the client's registered <code>httpsig_bound_access_token_thumbprint</code> value<a href="#section-6-3.4.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-3.5">
+          <p id="section-6-3.5.1">There is more than one signature with the tag "httpsig-oauth-token-request"<a href="#section-6-3.5.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-3.6">
+          <p id="section-6-3.6.1">The <code>created</code> value of the signature is too far in the past<a href="#section-6-3.6.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-3.7">
+          <p id="section-6-3.7.1">The <code>nonce</code> value is used more than once within the validity window of the signature<a href="#section-6-3.7.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-6-4">When issuing an access token bound to a key using HTTP Message Signatures, the AS associates the granted token with the key used in the requesting signature. All presentations of this token at any RS MUST contain an HTTP message signature as described in <a href="#presenting" class="auto internal xref">Section 7</a>.<a href="#section-6-4" class="pilcrow">¶</a></p>
+<p id="section-6-5">An HTTP Message Signature bound access token MUST have a <code>token_type</code> value of <code>httpsig</code>.<a href="#section-6-5" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-6-6">
+<pre>
+HTTP 200 OK
+Content-Type: application/json
+
+{
+    "access_token": "2340897.34j123-134uh2345n",
+    "token_type": "httpsig"
+}
+</pre><a href="#section-6-6" class="pilcrow">¶</a>
+</div>
+<p id="section-6-7">The client MUST associate this returned access token with the key used to make the requst.<a href="#section-6-7" class="pilcrow">¶</a></p>
+<p id="section-6-8">The confirmation carries the key itself, in the JSON representation of <a href="#key-json" class="auto internal xref">Section 4.2</a>, so that an RS can validate a presented signature without reference to the client's registration.<a href="#section-6-8" class="pilcrow">¶</a></p>
+<div id="encoding-confirmation-in-a-jwt">
+<section id="section-6.1">
+        <h3 id="name-encoding-confirmation-in-a-">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-encoding-confirmation-in-a-" class="section-name selfRef">Encoding Confirmation in a JWT</a>
+        </h3>
+<p id="section-6.1-1">The key bound to the token is carried in the <code>htsk</code> member of the <code>cnf</code> claim.<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<div class="lang-json sourcecode" id="section-6.1-2">
+<pre>
+{
+    "iss": "https://server.example.com",
+    "aud": "https://resource.example.com",
+    "cnf": {
+        "htsk": {
+            "alg": "ed25519",
+            "pub": "iuemcj_GhRHmY_yCsMlDNp3BQgPZDdG00VRsg_BgU3s"
+        }
+    }
+}
+</pre><a href="#section-6.1-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="returning-confirmation-in-token-introspection">
+<section id="section-6.2">
+        <h3 id="name-returning-confirmation-in-t">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-returning-confirmation-in-t" class="section-name selfRef">Returning Confirmation in Token Introspection</a>
+        </h3>
+<p id="section-6.2-1">The same <code>cnf</code> member is returned in a token introspection response.<a href="#section-6.2-1" class="pilcrow">¶</a></p>
+<p id="section-6.2-2">[[ Editor's note: <code>htsk</code> needs registering in the "JWT Confirmation Methods" registry, and the same value in the introspection response registry. ]]<a href="#section-6.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="presenting">
+<section id="section-7">
+      <h2 id="name-presenting-an-http-message-">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-presenting-an-http-message-" class="section-name selfRef">Presenting an HTTP Message Signature Bound Access Token</a>
+      </h2>
+<p id="section-7-1">HTTP Message Signature bound access token MUST be presented in an HTTP Authorization field using the <code>HTTPSig</code> authorization scheme.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-7-2">
+<pre>
+Authorization: HTTPSig 2340897.34j123-134uh2345n
+</pre><a href="#section-7-2" class="pilcrow">¶</a>
+</div>
+<p id="section-7-3">Note that HTTP authorization schemes defined in <span>[<a href="#HTTPAUTH" class="cite xref">HTTPAUTH</a>]</span> are case-insensitive, and so all the following are equivalent:<a href="#section-7-3" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-7-4">
+<pre>
+Authorization: HTTPSig 2340897.34j123-134uh2345n
+Authorization: httpsig 2340897.34j123-134uh2345n
+Authorization: HTTPSIG 2340897.34j123-134uh2345n
+Authorization: Httpsig 2340897.34j123-134uh2345n
+Authorization: hTtPsIg 2340897.34j123-134uh2345n
+</pre><a href="#section-7-4" class="pilcrow">¶</a>
+</div>
+<p id="section-7-5">When presenting an HTTP Message Signature bound access token to an RS, the client MUST include a signature compliant with <span>[<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span>. The covered components MUST include:<a href="#section-7-5" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-7-6.1">
+          <p id="section-7-6.1.1"><code>@method</code> the HTTP method of the request<a href="#section-7-6.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-7-6.2">
+          <p id="section-7-6.2.1"><code>@target-uri</code> the full request URI of the request (note that this includes the scheme, authority, path, and query)<a href="#section-7-6.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-7-6.3">
+          <p id="section-7-6.3.1"><code>authorization</code> the access token value being presented<a href="#section-7-6.3.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-7-7">The RS MAY require additional components to be covered by the signature, and the client MUST include any additional fields or components of the HTTP request that are relevant to the security of the RS. For example, if the API being served by the RS declares that incoming content type makes a material difference, the RS SHOULD require signing of the Content-Type header in addition to the above.<a href="#section-7-7" class="pilcrow">¶</a></p>
+<p id="section-7-8">The request MAY include multiple signatures to serve different needs.<a href="#section-7-8" class="pilcrow">¶</a></p>
+<p id="section-7-9">If the request includes an entity body (such as a POST, PUT, or QUERY), the client SHOULD calculate the digest as per <span>[<a href="#DIGEST" class="cite xref">DIGEST</a>]</span> and also sign the digest header (such as Content-Digest).<a href="#section-7-9" class="pilcrow">¶</a></p>
+<p id="section-7-10">The signature MUST include the following parameters:<a href="#section-7-10" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-7-11.1">
+          <p id="section-7-11.1.1"><code>created</code> a timestamp for signature creation; this MUST be within a small number of seconds of issuance (e.g. 30 seconds to account for clock skew)<a href="#section-7-11.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-7-11.2">
+          <p id="section-7-11.2.1"><code>nonce</code> a random unique value that the AS can use to prevent signature replay within the small validity time window<a href="#section-7-11.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-7-11.3">
+          <p id="section-7-11.3.1"><code>tag</code> a string indicating that this is being used for requesting a bound token, MUST be the value "httpsig-oauth"<a href="#section-7-11.3.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-7-12">The RS determines the key from the binding of the presented access token, and so the client MUST NOT include the <code>alg</code>, <code>keyid</code>, or <code>pub</code> signature parameters.<a href="#section-7-12" class="pilcrow">¶</a></p>
+<p id="section-7-13">For example, the following signed request includes a signature with the needed parameters:<a href="#section-7-13" class="pilcrow">¶</a></p>
+<div class="lang-http-message sourcecode" id="section-7-14">
+<pre>
+NOTE: '\' line wrapping per RFC 8792
+
+GET /foo HTTP/1.1
+Host: example.com
+Date: Mon, 20 Apr 2026 02:07:55 GMT
+Authorization: HTTPSig 2340897.34j123-134uh2345n
+Signature-Input: sig1=("@method" "@target-uri" "authorization")\
+  ;created=1776650875;nonce="k9Jyxempel2305Nmx7Rk"\
+  ;tag="httpsig-oauth"
+Signature: sig1=:uvIxaaJED8BxpYUL6cBd1v5uy24SptQnVQ35oKxWflg8GumiH77\
+  60va6P2qWxadrLodjGmIFna3bS70KxYv7CQ==:
+</pre><a href="#section-7-14" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="validating">
+<section id="section-8">
+      <h2 id="name-validating-an-http-message-">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-validating-an-http-message-" class="section-name selfRef">Validating an HTTP Message Signature Bound Resource Request</a>
+      </h2>
+<p id="section-8-1">In order for a request protected by an HTTP Message Signature bound access token to be considered valid, the RS MUST perform the following checks:<a href="#section-8-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-8-2.1">
+          <p id="section-8-2.1.1">The presented signature validates using the key bound to the token<a href="#section-8-2.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-8-2.2">
+          <p id="section-8-2.2.1">The signature validates using the HTTP_VERIFY algorithm associated with the key<a href="#section-8-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-8-2.3">
+          <p id="section-8-2.3.1">The <code>created</code> value is not too far in the past (e.g. 30 seconds to account for clock skew and network delays)<a href="#section-8-2.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-8-2.4">
+          <p id="section-8-2.4.1">The <code>nonce</code> value has not been previously used within the time validity window of this request<a href="#section-8-2.4.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-8-2.5">
+          <p id="section-8-2.5.1">The <code>tag</code> value is "httpsig-oauth"<a href="#section-8-2.5.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-8-2.6">
+          <p id="section-8-2.6.1">The covered components and parameters include all items enumerated in <a href="#presenting" class="auto internal xref">Section 7</a>, including the Authorization header field<a href="#section-8-2.6.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-8-2.7">
+          <p id="section-8-2.7.1">The <code>alg</code>, <code>keyid</code>, and <code>pub</code> parameters are not present<a href="#section-8-2.7.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+<p id="section-8-3">The last of these checks, and the corresponding checks in <a href="#issuing" class="auto internal xref">Section 6</a>, are required rather than optional: <span><a href="https://rfc-editor.org/rfc/rfc9421#section-3.2.1" class="relref">Section 3.2.1</a> of [<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span> allows an application to impose requirements beyond those of <span>[<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span>, but requires that it enforce them during verification and fail any signature that does not conform.<a href="#section-8-3" class="pilcrow">¶</a></p>
+<p id="section-8-4">If the request includes an entity body (such as a POST, PUT, or QUERY) and a digest as per <span>[<a href="#DIGEST" class="cite xref">DIGEST</a>]</span>, the RS MUST validate the digest.<a href="#section-8-4" class="pilcrow">¶</a></p>
+<p id="section-8-5">If the request includes multiple signatures tagged "httpsig-oauth", all signatures MUST be validated.<a href="#section-8-5" class="pilcrow">¶</a></p>
+<p id="section-8-6">For example, to validate the request:<a href="#section-8-6" class="pilcrow">¶</a></p>
+<div class="lang-http-message sourcecode" id="section-8-7">
+<pre>
+NOTE: '\' line wrapping per RFC 8792
+
+GET /foo HTTP/1.1
+Host: example.com
+Date: Mon, 20 Apr 2026 02:07:55 GMT
+Authorization: HTTPSig 2340897.34j123-134uh2345n
+Signature-Input: sig1=("@method" "@target-uri" "authorization")\
+  ;created=1776650875;nonce="k9Jyxempel2305Nmx7Rk"\
+  ;tag="httpsig-oauth"
+Signature: sig1=:ZT/aeezwK0q2jRs58DR0D0ZTwVcBLuOy4UU/OTUaACWaCDASsFP\
+  o/wFysJ8AH8Sby4wSH3bAb55i0oVWFqmEBg==:
+</pre><a href="#section-8-7" class="pilcrow">¶</a>
+</div>
+<p id="section-8-8">The RS determines the key bound to the token (in this example, assume the RS introspects the token to get the key material). The RS determines the algorithm from the key material.<a href="#section-8-8" class="pilcrow">¶</a></p>
+<p id="section-8-9">In this example, the token is bound to the ECDSA P-256 key <code>test-key-ecdsa-p256</code>, giving the <code>ecdsa-p256-sha256</code> algorithm. The signature input string is:<a href="#section-8-9" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-8-10">
+<pre>
+NOTE: '\' line wrapping per RFC 8792
+
+"@method": GET
+"@target-uri": https://example.com/foo
+"authorization": HTTPSig 2340897.34j123-134uh2345n
+"@signature-params": ("@method" "@target-uri" "authorization")\
+  ;created=1776650875;nonce="k9Jyxempel2305Nmx7Rk"\
+  ;tag="httpsig-oauth"
+</pre><a href="#section-8-10" class="pilcrow">¶</a>
+</div>
+<p id="section-8-11">The RS then calculates the signature validation against the signature base using the key using the algorithm appropriate HTTP_VERIFY function, per <span>[<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span>.<a href="#section-8-11" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="Acknowledgements">
+<section id="section-9">
+      <h2 id="name-acknowledgements">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+    </h2>
+</section>
+</div>
+<div id="IANA">
+<section id="section-10">
+      <h2 id="name-iana-considerations">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-10-1">[[ TBD: register the token type and new parameters into their appropriate registries, as well as the JWT and introspection parameters needed for confirmation methods. This includes registering the <code>pub</code> signature parameter defined in <a href="#present-key" class="auto internal xref">Section 2.1</a> in the "HTTP Signature Metadata Parameters" registry established by <span>[<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span>, the <code>htsk</code> confirmation method, and the <code>httpsig_bound_access_token_thumbprint</code> client metadata field. ]]<a href="#section-10-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="Security">
+<section id="section-11">
+      <h2 id="name-security-considerations">
+<a href="#section-11" class="section-number selfRef">11. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-11-1">[[ TBD. ]]<a href="#section-11-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-11-2.1">
+          <p id="section-11-2.1.1">All requests have to be over TLS or equivalent as per <span>[<a href="#BCP195" class="cite xref">BCP195</a>]</span>.<a href="#section-11-2.1.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-11-2.2">
+          <p id="section-11-2.2.1">Leakage of a private key alongside a token allows for re-presentation of that token.<a href="#section-11-2.2.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-11-2.3">
+          <p id="section-11-2.3.1">Insufficient coverage of a message allows a signature to be attached to a different message.<a href="#section-11-2.3.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-11-2.4">
+          <p id="section-11-2.4.1">Failure to check derived attributes allows a signature to be replayed.<a href="#section-11-2.4.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-11-2.5">
+          <p id="section-11-2.5.1">Signatures could be replayed outside of their vailidty window if not checked.<a href="#section-11-2.5.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-11-2.6">
+          <p id="section-11-2.6.1">An access token cannot be bound to a shared secret. Every party that validates a presented signature needs the key that produced it, and <span><a href="https://rfc-editor.org/rfc/rfc9421#section-7.3.3" class="relref">Section 7.3.3</a> of [<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span> notes that a verifier holding symmetric key material is thereby able to produce a valid signature of its own. Binding a token to a shared secret would let every RS that accepts it produce requests indistinguishable from the client's. A shared secret also has no thumbprint that can be published safely, since publishing it would disclose the secret.<a href="#section-11-2.6.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+</section>
+</div>
+<div id="Privacy">
+<section id="section-12">
+      <h2 id="name-privacy-considerations">
+<a href="#section-12" class="section-number selfRef">12. </a><a href="#name-privacy-considerations" class="section-name selfRef">Privacy Considerations</a>
+      </h2>
+<p id="section-12-1">[[ TBD. ]]<a href="#section-12-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-12-2.1">
+          <p id="section-12-2.1.1">Re-use of a public-key for tokens at multiple RS's can allow tracking of a client/user combination based on the key identity.<a href="#section-12-2.1.1" class="pilcrow">¶</a></p>
+</li>
+      </ul>
+</section>
+</div>
+<div id="sec-combined-references">
+<section id="section-13">
+      <h2 id="name-references">
+<a href="#section-13" class="section-number selfRef">13. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<div id="sec-normative-references">
+<section id="section-13.1">
+        <h3 id="name-normative-references">
+<a href="#section-13.1" class="section-number selfRef">13.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="BCP195">[BCP195]</dt>
+        <dd>
+<div class="refInstance">Best Current Practice 195, <span>&lt;<a href="https://www.rfc-editor.org/info/bcp195">https://www.rfc-editor.org/info/bcp195</a>&gt;</span>.<br><span>At the time of writing, this BCP comprises the following:</span>
+</div>
+<div class="refInstance" id="RFC8996">
+            <span class="refAuthor">Moriarty, K.</span> and <span class="refAuthor">S. Farrell</span>, <span class="refTitle">"Deprecating TLS 1.0 and TLS 1.1"</span>, <span class="seriesInfo">BCP 195</span>, <span class="seriesInfo">RFC 8996</span>, <span class="seriesInfo">DOI 10.17487/RFC8996</span>, <time datetime="2021-03" class="refDate">March 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8996">https://www.rfc-editor.org/info/rfc8996</a>&gt;</span>. </div>
+<div class="refInstance" id="RFC9325">
+            <span class="refAuthor">Sheffer, Y.</span>, <span class="refAuthor">Saint-Andre, P.</span>, and <span class="refAuthor">T. Fossati</span>, <span class="refTitle">"Recommendations for Secure Use of Transport Layer Security (TLS) and Datagram Transport Layer Security (DTLS)"</span>, <span class="seriesInfo">BCP 195</span>, <span class="seriesInfo">RFC 9325</span>, <span class="seriesInfo">DOI 10.17487/RFC9325</span>, <time datetime="2022-11" class="refDate">November 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc9325">https://www.rfc-editor.org/info/rfc9325</a>&gt;</span>. </div>
+</dd>
+<dd class="break"></dd>
+<dt id="DIGEST">[DIGEST]</dt>
+        <dd>
+<span class="refAuthor">Polli, R.</span> and <span class="refAuthor">L. Pardue</span>, <span class="refTitle">"Digest Fields"</span>, <span class="seriesInfo">RFC 9530</span>, <span class="seriesInfo">DOI 10.17487/RFC9530</span>, <time datetime="2024-02" class="refDate">February 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9530">https://www.rfc-editor.org/rfc/rfc9530</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="DPOP">[DPOP]</dt>
+        <dd>
+<span class="refAuthor">Fett, D.</span>, <span class="refAuthor">Campbell, B.</span>, <span class="refAuthor">Bradley, J.</span>, <span class="refAuthor">Lodderstedt, T.</span>, <span class="refAuthor">Jones, M.</span>, and <span class="refAuthor">D. Waite</span>, <span class="refTitle">"OAuth 2.0 Demonstrating Proof of Possession (DPoP)"</span>, <span class="seriesInfo">RFC 9449</span>, <span class="seriesInfo">DOI 10.17487/RFC9449</span>, <time datetime="2023-09" class="refDate">September 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9449">https://www.rfc-editor.org/rfc/rfc9449</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="DYNREG">[DYNREG]</dt>
+        <dd>
+<span class="refAuthor">Richer, J., Ed.</span>, <span class="refAuthor">Jones, M.</span>, <span class="refAuthor">Bradley, J.</span>, <span class="refAuthor">Machulak, M.</span>, and <span class="refAuthor">P. Hunt</span>, <span class="refTitle">"OAuth 2.0 Dynamic Client Registration Protocol"</span>, <span class="seriesInfo">RFC 7591</span>, <span class="seriesInfo">DOI 10.17487/RFC7591</span>, <time datetime="2015-07" class="refDate">July 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc7591">https://www.rfc-editor.org/rfc/rfc7591</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="HTTPAUTH">[HTTPAUTH]</dt>
+        <dd>
+<span class="refAuthor">Fielding, R., Ed.</span> and <span class="refAuthor">J. Reschke, Ed.</span>, <span class="refTitle">"Hypertext Transfer Protocol (HTTP/1.1): Authentication"</span>, <span class="seriesInfo">RFC 7235</span>, <span class="seriesInfo">DOI 10.17487/RFC7235</span>, <time datetime="2014-06" class="refDate">June 2014</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc7235">https://www.rfc-editor.org/rfc/rfc7235</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="HTTPSIG">[HTTPSIG]</dt>
+        <dd>
+<span class="refAuthor">Backman, A., Ed.</span>, <span class="refAuthor">Richer, J., Ed.</span>, and <span class="refAuthor">M. Sporny</span>, <span class="refTitle">"HTTP Message Signatures"</span>, <span class="seriesInfo">RFC 9421</span>, <span class="seriesInfo">DOI 10.17487/RFC9421</span>, <time datetime="2024-02" class="refDate">February 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9421">https://www.rfc-editor.org/rfc/rfc9421</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="MTLS">[MTLS]</dt>
+        <dd>
+<span class="refAuthor">Campbell, B.</span>, <span class="refAuthor">Bradley, J.</span>, <span class="refAuthor">Sakimura, N.</span>, and <span class="refAuthor">T. Lodderstedt</span>, <span class="refTitle">"OAuth 2.0 Mutual-TLS Client Authentication and Certificate-Bound Access Tokens"</span>, <span class="seriesInfo">RFC 8705</span>, <span class="seriesInfo">DOI 10.17487/RFC8705</span>, <time datetime="2020-02" class="refDate">February 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8705">https://www.rfc-editor.org/rfc/rfc8705</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="OAUTH">[OAUTH]</dt>
+        <dd>
+<span class="refAuthor">Hardt, D., Ed.</span>, <span class="refTitle">"The OAuth 2.0 Authorization Framework"</span>, <span class="seriesInfo">RFC 6749</span>, <span class="seriesInfo">DOI 10.17487/RFC6749</span>, <time datetime="2012-10" class="refDate">October 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc6749">https://www.rfc-editor.org/rfc/rfc6749</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="PAR">[PAR]</dt>
+        <dd>
+<span class="refAuthor">Lodderstedt, T.</span>, <span class="refAuthor">Campbell, B.</span>, <span class="refAuthor">Sakimura, N.</span>, <span class="refAuthor">Tonge, D.</span>, and <span class="refAuthor">F. Skokan</span>, <span class="refTitle">"OAuth 2.0 Pushed Authorization Requests"</span>, <span class="seriesInfo">RFC 9126</span>, <span class="seriesInfo">DOI 10.17487/RFC9126</span>, <time datetime="2021-09" class="refDate">September 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9126">https://www.rfc-editor.org/rfc/rfc9126</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8032">[RFC8032]</dt>
+        <dd>
+<span class="refAuthor">Josefsson, S.</span> and <span class="refAuthor">I. Liusvaara</span>, <span class="refTitle">"Edwards-Curve Digital Signature Algorithm (EdDSA)"</span>, <span class="seriesInfo">RFC 8032</span>, <span class="seriesInfo">DOI 10.17487/RFC8032</span>, <time datetime="2017-01" class="refDate">January 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8032">https://www.rfc-editor.org/rfc/rfc8032</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8174">https://www.rfc-editor.org/rfc/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8792">[RFC8792]</dt>
+        <dd>
+<span class="refAuthor">Watsen, K.</span>, <span class="refAuthor">Auerswald, E.</span>, <span class="refAuthor">Farrel, A.</span>, and <span class="refAuthor">Q. Wu</span>, <span class="refTitle">"Handling Long Lines in Content of Internet-Drafts and RFCs"</span>, <span class="seriesInfo">RFC 8792</span>, <span class="seriesInfo">DOI 10.17487/RFC8792</span>, <time datetime="2020-06" class="refDate">June 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8792">https://www.rfc-editor.org/rfc/rfc8792</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9964">[RFC9964]</dt>
+        <dd>
+<span class="refAuthor">Prorock, M.</span> and <span class="refAuthor">O. Steele</span>, <span class="refTitle">"ML-DSA for JSON Object Signing and Encryption (JOSE) and CBOR Object Signing and Encryption (COSE)"</span>, <span class="seriesInfo">RFC 9964</span>, <span class="seriesInfo">DOI 10.17487/RFC9964</span>, <time datetime="2026-05" class="refDate">May 2026</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9964">https://www.rfc-editor.org/rfc/rfc9964</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="SEC1">[SEC1]</dt>
+        <dd>
+<span class="refAuthor">Certicom Research</span>, <span class="refTitle">"SEC 1: Elliptic Curve Cryptography"</span>, <span class="refContent">Standards for Efficient Cryptography, Version 2.0</span>, <time datetime="2009-05" class="refDate">May 2009</time>, <span>&lt;<a href="https://www.secg.org/sec1-v2.pdf">https://www.secg.org/sec1-v2.pdf</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="STRUCTURED">[STRUCTURED]</dt>
+      <dd>
+<span class="refAuthor">Nottingham, M.</span> and <span class="refAuthor">P. Kamp</span>, <span class="refTitle">"Structured Field Values for HTTP"</span>, <span class="seriesInfo">RFC 9651</span>, <span class="seriesInfo">DOI 10.17487/RFC9651</span>, <time datetime="2024-09" class="refDate">September 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9651">https://www.rfc-editor.org/rfc/rfc9651</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-informative-references">
+<section id="section-13.2">
+        <h3 id="name-informative-references">
+<a href="#section-13.2" class="section-number selfRef">13.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="I-D.ietf-oauth-client-id-metadata-document">[I-D.ietf-oauth-client-id-metadata-document]</dt>
+        <dd>
+<span class="refAuthor">Parecki, A.</span> and <span class="refAuthor">E. Smith</span>, <span class="refTitle">"OAuth Client ID Metadata Document"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-oauth-client-id-metadata-document-02</span>, <time datetime="2026-07-06" class="refDate">6 July 2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document-02">https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document-02</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-oauth-signed-http-request">[I-D.ietf-oauth-signed-http-request]</dt>
+        <dd>
+<span class="refAuthor">Richer, J.</span>, <span class="refAuthor">Bradley, J.</span>, and <span class="refAuthor">H. Tschofenig</span>, <span class="refTitle">"A Method for Signing HTTP Requests for OAuth"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-oauth-signed-http-request-03</span>, <time datetime="2016-08-08" class="refDate">8 August 2016</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-signed-http-request-03">https://datatracker.ietf.org/doc/html/draft-ietf-oauth-signed-http-request-03</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="SIGNED-INTROSPECTION">[SIGNED-INTROSPECTION]</dt>
+      <dd>
+<span class="refAuthor">Lodderstedt, T., Ed.</span> and <span class="refAuthor">V. Dzhuvinov</span>, <span class="refTitle">"JSON Web Token (JWT) Response for OAuth Token Introspection"</span>, <span class="seriesInfo">RFC 9701</span>, <span class="seriesInfo">DOI 10.17487/RFC9701</span>, <time datetime="2025-01" class="refDate">January 2025</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9701">https://www.rfc-editor.org/rfc/rfc9701</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="history">
+<section id="appendix-A">
+      <h2 id="name-document-history">
+<a href="#appendix-A" class="section-number selfRef">Appendix A. </a><a href="#name-document-history" class="section-name selfRef">Document History</a>
+      </h2>
+<ul class="normal">
+<li class="normal" id="appendix-A-1.1">
+          <p id="appendix-A-1.1.1">-03<a href="#appendix-A-1.1.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="appendix-A-1.1.2.1">
+              <p id="appendix-A-1.1.2.1.1">Added co-authors<a href="#appendix-A-1.1.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="appendix-A-1.1.2.2">
+              <p id="appendix-A-1.1.2.2.1">Changed inline key presentation from a header field carrying a JWK to a single <code>pub</code> signature parameter carrying the raw public key<a href="#appendix-A-1.1.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="appendix-A-1.1.2.3">
+              <p id="appendix-A-1.1.2.3.1">Limited the inline key representation to ECDSA, Ed25519, and ML-DSA<a href="#appendix-A-1.1.2.3.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="appendix-A-1.1.2.4">
+              <p id="appendix-A-1.1.2.4.1">Required the <code>alg</code> signature parameter for runtime key introduction<a href="#appendix-A-1.1.2.4.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="appendix-A-1.1.2.5">
+              <p id="appendix-A-1.1.2.5.1">Removed <code>keyid</code> entirely; the key is presented to the AS and carried in the token binding for the RS<a href="#appendix-A-1.1.2.5.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="appendix-A-1.1.2.6">
+              <p id="appendix-A-1.1.2.6.1">Required the bound key to be asymmetric, disallowing shared secrets<a href="#appendix-A-1.1.2.6.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="appendix-A-1.1.2.7">
+              <p id="appendix-A-1.1.2.7.1">Required signature algorithms to come from the "HTTP Signature Algorithms" registry, with no use of JOSE algorithm names<a href="#appendix-A-1.1.2.7.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="appendix-A-1.1.2.8">
+              <p id="appendix-A-1.1.2.8.1">Made the client present its key in the token request under both binding methods, and reduced pre-registration to a single key thumbprint<a href="#appendix-A-1.1.2.8.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="appendix-A-1.1.2.9">
+              <p id="appendix-A-1.1.2.9.1">Defined the key thumbprint, the JSON key representation, and the <code>htsk</code> confirmation method<a href="#appendix-A-1.1.2.9.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+</li>
+        <li class="normal" id="appendix-A-1.2">
+          <p id="appendix-A-1.2.1">-02<a href="#appendix-A-1.2.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="appendix-A-1.2.2.1">
+              <p id="appendix-A-1.2.2.1.1">Editorial fixes<a href="#appendix-A-1.2.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="appendix-A-1.2.2.2">
+              <p id="appendix-A-1.2.2.2.1">Added example of client registration metadata parameter in CIMD<a href="#appendix-A-1.2.2.2.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+</li>
+        <li class="normal" id="appendix-A-1.3">
+          <p id="appendix-A-1.3.1">-01<a href="#appendix-A-1.3.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="appendix-A-1.3.2.1">
+              <p id="appendix-A-1.3.2.1.1">Added key binding semantics<a href="#appendix-A-1.3.2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="appendix-A-1.3.2.2">
+              <p id="appendix-A-1.3.2.2.1">Updated references<a href="#appendix-A-1.3.2.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="appendix-A-1.3.2.3">
+              <p id="appendix-A-1.3.2.3.1">Updated presentation requirements<a href="#appendix-A-1.3.2.3.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="appendix-A-1.3.2.4">
+              <p id="appendix-A-1.3.2.4.1">Added appendix for potential future work<a href="#appendix-A-1.3.2.4.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="appendix-A-1.3.2.5">
+              <p id="appendix-A-1.3.2.5.1">Added some basic security and privacy considerations, to be expanded upon group discussion<a href="#appendix-A-1.3.2.5.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+</li>
+        <li class="normal" id="appendix-A-1.4">
+          <p id="appendix-A-1.4.1">-00<a href="#appendix-A-1.4.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="appendix-A-1.4.2.1">
+              <p id="appendix-A-1.4.2.1.1">Initial individual draft.<a href="#appendix-A-1.4.2.1.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+</li>
+      </ul>
+</section>
+</div>
+<div id="potential-other-work">
+<section id="appendix-B">
+      <h2 id="name-potential-other-work">
+<a href="#appendix-B" class="section-number selfRef">Appendix B. </a><a href="#name-potential-other-work" class="section-name selfRef">Potential Other Work</a>
+      </h2>
+<p id="appendix-B-1"><span>[<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span> provides a generic mechanism for signing arbitrary HTTP messages, both requests and responses. While this specification is focused solely on OAuth access token issuance and usage, <span>[<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span> could be used in other places in the OAuth ecosystem and this appendix exists to capture some of those ideas.<a href="#appendix-B-1" class="pilcrow">¶</a></p>
+<div id="client-authentication">
+<section id="appendix-B.1">
+        <h3 id="name-client-authentication">
+<a href="#appendix-B.1" class="section-number selfRef">B.1. </a><a href="#name-client-authentication" class="section-name selfRef">Client Authentication</a>
+        </h3>
+<p id="appendix-B.1-1">Similarly to <span>[<a href="#MTLS" class="cite xref">MTLS</a>]</span>, <span>[<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span> could be used as a generic client authentication mechanism for the client calling the AS for any authenticated call, including token PAR, the token endpoint. Since <span>[<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span> allows for multiple signatures with different usage parameters (including <code>tag</code>), this could be layered on top of even the runtime token request key binding, allowing a client to use one key for authentication and another for token use.<a href="#appendix-B.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="as-responses">
+<section id="appendix-B.2">
+        <h3 id="name-as-responses">
+<a href="#appendix-B.2" class="section-number selfRef">B.2. </a><a href="#name-as-responses" class="section-name selfRef">AS Responses</a>
+        </h3>
+<p id="appendix-B.2-1">Since <span>[<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span> can be used to sign responses, an AS could sign its responses from backend endpoints (including the token endpoint, revocation endpoint, discovery endpoint, introspection endpoint, etc) with an issuer-based key, providing a layer of protection in addition to the TLS transport. Signed response mechanisms like <span>[<a href="#SIGNED-INTROSPECTION" class="cite xref">SIGNED-INTROSPECTION</a>]</span> could be replaced with this method in many use cases.<a href="#appendix-B.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="non-repudiation-of-requests">
+<section id="appendix-B.3">
+        <h3 id="name-non-repudiation-of-requests">
+<a href="#appendix-B.3" class="section-number selfRef">B.3. </a><a href="#name-non-repudiation-of-requests" class="section-name selfRef">Non-Repudiation of Requests</a>
+        </h3>
+<p id="appendix-B.3-1">Since <span>[<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span> allows a signed response to contain elements of the request that triggered the response, an AS or RS could use this mechanism to provide non-repudiation of a response to bind it to a particular request parameter set.<a href="#appendix-B.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="par-key-introduction">
+<section id="appendix-B.4">
+        <h3 id="name-par-key-introduction">
+<a href="#appendix-B.4" class="section-number selfRef">B.4. </a><a href="#name-par-key-introduction" class="section-name selfRef">PAR Key Introduction</a>
+        </h3>
+<p id="appendix-B.4-1">Keys for this purpose could be introduced during a <span>[<a href="#PAR" class="cite xref">PAR</a>]</span> request phase, as part of the call to the PAR endpoint.<a href="#appendix-B.4-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="accept-signature-support">
+<section id="appendix-B.5">
+        <h3 id="name-accept-signature-support">
+<a href="#appendix-B.5" class="section-number selfRef">B.5. </a><a href="#name-accept-signature-support" class="section-name selfRef">Accept-Signature Support</a>
+        </h3>
+<p id="appendix-B.5-1">The <code>Accept-Signature</code> mechanism in <span>[<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span> allows for runtime discovery of not only the applicability of signatures but also the expected coverage, for particular uses.<a href="#appendix-B.5-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="test-vectors">
+<section id="appendix-C">
+      <h2 id="name-test-vectors">
+<a href="#appendix-C" class="section-number selfRef">Appendix C. </a><a href="#name-test-vectors" class="section-name selfRef">Test Vectors</a>
+      </h2>
+<p id="appendix-C-1">[[ Editor's note: we really should have end-to-end test vectors with keys and stuff all in here, not just inline. ]]<a href="#appendix-C-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-D">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Justin Richer (<span class="role">editor</span>)</span></div>
+<div dir="auto" class="left"><span class="org">MongoDB</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:ietf@justin.richer.org" class="email">ietf@justin.richer.org</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Aaron Parecki</span></div>
+<div dir="auto" class="left"><span class="org">Okta</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:aaron@parecki.com" class="email">aaron@parecki.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Paul Bastian</span></div>
+<div dir="auto" class="left"><span class="org">Bundesdruckerei</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:paul.bastian@posteo.de" class="email">paul.bastian@posteo.de</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
