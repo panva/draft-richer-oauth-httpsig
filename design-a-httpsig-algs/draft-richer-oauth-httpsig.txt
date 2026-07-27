@@ -173,23 +173,21 @@ Table of Contents
 
 2.1.  Presenting the Key
 
-   Under both key binding methods the client presents its key, as
-   defined in Section 4, to the AS in the token request, in two
-   signature parameters attached to the signature input: alg as a
-   String, and pub as a Byte Sequence.
+   The client presents its key, as defined in Section 4, to the AS in
+   the token request, in two signature parameters attached to the
+   signature input: alg as a String, and pub as a Byte Sequence.
 
    The key is presented in full, so the AS has nothing to dereference
    and the client MUST NOT include the keyid signature parameter.
 
-   The two methods differ only in what the AS does with the presented
-   key.
+   This is the same whichever binding method the client uses.  The two
+   differ only in what the AS does with the key it receives.
 
 2.2.  Pre-Registration of Keys
 
    A client pre-registering its key for [HTTPSIG] binding MUST publish
    the thumbprint of that key, as defined in Section 4.1, in the
    httpsig_bound_access_token_thumbprint field of its client metadata.
-   A client registers exactly one thumbprint.
 
    The client does not publish the key itself.  It presents the key in
    the token request as in Section 2.1, and the AS binds a token to that
@@ -313,13 +311,11 @@ Table of Contents
    the "HTTP Signature Algorithms" registry established by Section 6.2
    of [HTTPSIG].
 
-   The JOSE signing algorithms described in Section 3.3.7 of [HTTPSIG]
-   MUST NOT be used.  Those algorithms are named using JSON Web
-   Algorithm values, which are not registered in the "HTTP Signature
-   Algorithms" registry.
-
-   The algorithm MUST be an asymmetric signature algorithm for which
-   this document defines a public key encoding in Section 5.
+   The algorithm MUST be an asymmetric signature algorithm for which a
+   public key encoding is defined.  Section 5 defines encodings for the
+   asymmetric algorithms in that registry at the time of writing.  An
+   encoding for an algorithm registered later can be defined by any
+   specification, including the one that registers the algorithm.
 
 4.  HTTP Signature Public Keys
 
@@ -347,10 +343,6 @@ Table of Contents
    Where the thumbprint is carried as a string, it is the base64url
    encoding of that digest without padding.
 
-   The zero octet separates the two inputs so that no two distinct keys
-   share a thumbprint.  Algorithm identifiers are drawn from a registry
-   that does not permit the zero octet, so the boundary is unambiguous.
-
 4.2.  JSON Representation
 
    Where a key is carried in a JSON object, such as in an access token
@@ -365,10 +357,10 @@ Table of Contents
 
 5.  Embedding a Public Key Value
 
-   When encoding a public key value in a runtime request as in
-   Section 2.3, the client includes the public key material in the pub
-   signature parameter attached to the signature input, encoded as a
-   Byte Sequence as defined in [STRUCTURED].
+   When presenting a key as in Section 2.1, the client includes the
+   public key material in the pub signature parameter attached to the
+   signature input, encoded as a Byte Sequence as defined in
+   [STRUCTURED].
 
    The contents of the pub parameter are the public key material
    appropriate to the signature algorithm indicated by the alg signature
@@ -418,8 +410,8 @@ Table of Contents
    *  The alg or pub parameter is absent, or the keyid parameter is
       present
 
-   *  The alg value is not an asymmetric algorithm for which this
-      document defines a public key encoding in Section 5
+   *  The alg value is not an asymmetric algorithm, or no public key
+      encoding is defined for it
 
    *  The pub value is not a well-formed public key for the indicated
       algorithm
@@ -480,8 +472,9 @@ Table of Contents
    The same cnf member is returned in a token introspection response.
 
    [[ Editor's note: htsk needs registering in the "JWT Confirmation
-   Methods" registry, and the same value in the introspection response
-   registry. ]]
+   Methods" registry.  Nothing further is needed for introspection,
+   since cnf is already a registered introspection response parameter
+   and carries the same structure. ]]
 
 7.  Presenting an HTTP Message Signature Bound Access Token
 
