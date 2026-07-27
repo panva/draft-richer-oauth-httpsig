@@ -8,6 +8,8 @@
 <meta content="Justin Richer" name="author">
 <meta content="Aaron Parecki" name="author">
 <meta content="Paul Bastian" name="author">
+<meta content="Filip Skokan" name="author">
+<meta content="Christian Bormann" name="author">
 <meta content="
        This extension to the OAuth 2.0 authorization framework defines a method for using
 HTTP Message Signatures to bind access tokens to keys held by OAuth 2.0 clients. 
@@ -1085,6 +1087,14 @@ svg {
       <div class="author-name">P. Bastian</div>
 <div class="org">Bundesdruckerei</div>
 </div>
+<div class="author">
+      <div class="author-name">F. Skokan</div>
+<div class="org">Okta</div>
+</div>
+<div class="author">
+      <div class="author-name">C. Bormann</div>
+<div class="org">SPRIND</div>
+</div>
 </dd>
 </dl>
 </div>
@@ -1332,8 +1342,9 @@ appear in all capitals, as shown here.<a href="#section-1.1-1" class="pilcrow">�
 </li>
       </ul>
 <p id="section-2-3">As part of its registration, a client MUST indicate which method it will use, using either the <code>httpsig_key_binding_method</code> client registration metadata parameter defined (TBD) in <a href="#IANA" class="auto internal xref">Section 10</a> when using Dynamic Client Registration (<span>[<a href="#DYNREG" class="cite xref">DYNREG</a>]</span>) or Client ID Metadata Document (<span>[<a href="#I-D.ietf-oauth-client-id-metadata-document" class="cite xref">I-D.ietf-oauth-client-id-metadata-document</a>]</span>), or via an out of band method.<a href="#section-2-3" class="pilcrow">¶</a></p>
-<p id="section-2-4">[[ Editor's note: do we want to add an AS/RS metadata parameter to signal support for each type? ]]<a href="#section-2-4" class="pilcrow">¶</a></p>
-<p id="section-2-5">[[ Editor's note: Are there any other patterns of key introduction we should cover? I put PAR in the appendix as a note. ]]<a href="#section-2-5" class="pilcrow">¶</a></p>
+<p id="section-2-4">[[ Editor's note: the values of <code>httpsig_key_binding_method</code> still need defining. The example below uses "preregistered" for <a href="#preregister" class="auto internal xref">Section 2.2</a>, and the method in <a href="#runtime" class="auto internal xref">Section 2.3</a> has no name yet. ]]<a href="#section-2-4" class="pilcrow">¶</a></p>
+<p id="section-2-5">[[ Editor's note: do we want to add an AS/RS metadata parameter to signal support for each type? ]]<a href="#section-2-5" class="pilcrow">¶</a></p>
+<p id="section-2-6">[[ Editor's note: Are there any other patterns of key introduction we should cover? I put PAR in the appendix as a note. ]]<a href="#section-2-6" class="pilcrow">¶</a></p>
 <div id="present-key">
 <section id="section-2.1">
         <h3 id="name-presenting-the-key">
@@ -1353,6 +1364,7 @@ appear in all capitals, as shown here.<a href="#section-1.1-1" class="pilcrow">�
 <p id="section-2.2-2">The client does not publish the key itself. It presents the key in the token request as in <a href="#present-key" class="auto internal xref">Section 2.1</a>, and the AS binds a token to that key only if its thumbprint matches the registered value.<a href="#section-2.2-2" class="pilcrow">¶</a></p>
 <p id="section-2.2-3">Because the algorithm identifier is an input to the thumbprint, the registered value commits the client to a single algorithm as well as to a single key.<a href="#section-2.2-3" class="pilcrow">¶</a></p>
 <p id="section-2.2-4">Note that pre-registration can occur statically or dynamically (such as by using <span>[<a href="#DYNREG" class="cite xref">DYNREG</a>]</span>), as long as the thumbprint is associated with the client's <code>client_id</code> before the token request is made.<a href="#section-2.2-4" class="pilcrow">¶</a></p>
+<p id="section-2.2-5">[[ Editor's note: <code>httpsig_bound_access_token_thumbprint</code> should become an array of thumbprints, so that a client can rotate keys and register more than one. The AS would then bind a token if the presented key's thumbprint matches any registered value. ]]<a href="#section-2.2-5" class="pilcrow">¶</a></p>
 <div id="example-client-registration">
 <section id="section-2.2.1">
           <h4 id="name-example-client-registration">
@@ -1365,7 +1377,7 @@ appear in all capitals, as shown here.<a href="#section-1.1-1" class="pilcrow">�
     "client_id": "https://client.example.com/client-metadata.json",
     "client_name": "Example Client",
     "httpsig_bound_access_token_thumbprint":
-        "ZfKrEwGZlbBaGH2QJnfjNCyBAO0Uz-8gPQXQOVojYzE",
+        "a3ugj_QpnJqJm_ixvE5t6zCEPkIq7fZAiZ63-O-kAcY",
     "httpsig_key_binding_method": "preregistered"
 }
 </pre><a href="#section-2.2.1-2" class="pilcrow">¶</a>
@@ -1581,13 +1593,16 @@ grant_type=authorization_code&amp;code=SplxlOBeZQQYbYS6WxSbIA&amp;redirect_u\
           <p id="section-6-3.4.1">The client uses pre-registered keys as in <a href="#preregister" class="auto internal xref">Section 2.2</a> and the thumbprint of the presented key does not match the client's registered <code>httpsig_bound_access_token_thumbprint</code> value<a href="#section-6-3.4.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-6-3.5">
-          <p id="section-6-3.5.1">There is more than one signature with the tag "httpsig-oauth-token-request"<a href="#section-6-3.5.1" class="pilcrow">¶</a></p>
+          <p id="section-6-3.5.1">The <code>Content-Digest</code> field value does not match a digest computed over the request body<a href="#section-6-3.5.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-6-3.6">
-          <p id="section-6-3.6.1">The <code>created</code> value of the signature is too far in the past<a href="#section-6-3.6.1" class="pilcrow">¶</a></p>
+          <p id="section-6-3.6.1">There is more than one signature with the tag "httpsig-oauth-token-request"<a href="#section-6-3.6.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-6-3.7">
-          <p id="section-6-3.7.1">The <code>nonce</code> value is used more than once within the validity window of the signature<a href="#section-6-3.7.1" class="pilcrow">¶</a></p>
+          <p id="section-6-3.7.1">The <code>created</code> value of the signature is too far in the past<a href="#section-6-3.7.1" class="pilcrow">¶</a></p>
+</li>
+        <li class="normal" id="section-6-3.8">
+          <p id="section-6-3.8.1">The <code>nonce</code> value is used more than once within the validity window of the signature<a href="#section-6-3.8.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 <p id="section-6-4">When issuing an access token bound to a key using HTTP Message Signatures, the AS associates the granted token with the key used in the requesting signature. All presentations of this token at any RS MUST contain an HTTP message signature as described in <a href="#presenting" class="auto internal xref">Section 7</a>.<a href="#section-6-4" class="pilcrow">¶</a></p>
@@ -1603,7 +1618,7 @@ Content-Type: application/json
 }
 </pre><a href="#section-6-6" class="pilcrow">¶</a>
 </div>
-<p id="section-6-7">The client MUST associate this returned access token with the key used to make the requst.<a href="#section-6-7" class="pilcrow">¶</a></p>
+<p id="section-6-7">The client MUST associate this returned access token with the key used to make the request.<a href="#section-6-7" class="pilcrow">¶</a></p>
 <p id="section-6-8">The confirmation carries the key itself, in the JSON representation of <a href="#key-json" class="auto internal xref">Section 4.2</a>, so that an RS can validate a presented signature without reference to the client's registration.<a href="#section-6-8" class="pilcrow">¶</a></p>
 <div id="encoding-confirmation-in-a-jwt">
 <section id="section-6.1">
@@ -1643,7 +1658,7 @@ Content-Type: application/json
       <h2 id="name-presenting-an-http-message-">
 <a href="#section-7" class="section-number selfRef">7. </a><a href="#name-presenting-an-http-message-" class="section-name selfRef">Presenting an HTTP Message Signature Bound Access Token</a>
       </h2>
-<p id="section-7-1">HTTP Message Signature bound access token MUST be presented in an HTTP Authorization field using the <code>HTTPSig</code> authorization scheme.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<p id="section-7-1">An HTTP Message Signature bound access token MUST be presented in an HTTP Authorization field using the <code>HTTPSig</code> authorization scheme.<a href="#section-7-1" class="pilcrow">¶</a></p>
 <div class="alignLeft art-text artwork" id="section-7-2">
 <pre>
 Authorization: HTTPSig 2340897.34j123-134uh2345n
@@ -1680,10 +1695,10 @@ Authorization: hTtPsIg 2340897.34j123-134uh2345n
           <p id="section-7-11.1.1"><code>created</code> a timestamp for signature creation; this MUST be within a small number of seconds of issuance (e.g. 30 seconds to account for clock skew)<a href="#section-7-11.1.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-7-11.2">
-          <p id="section-7-11.2.1"><code>nonce</code> a random unique value that the AS can use to prevent signature replay within the small validity time window<a href="#section-7-11.2.1" class="pilcrow">¶</a></p>
+          <p id="section-7-11.2.1"><code>nonce</code> a random unique value that the RS can use to prevent signature replay within the small validity time window<a href="#section-7-11.2.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-7-11.3">
-          <p id="section-7-11.3.1"><code>tag</code> a string indicating that this is being used for requesting a bound token, MUST be the value "httpsig-oauth"<a href="#section-7-11.3.1" class="pilcrow">¶</a></p>
+          <p id="section-7-11.3.1"><code>tag</code> a string indicating that this is being used for presenting a bound token, MUST be the value "httpsig-oauth"<a href="#section-7-11.3.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 <p id="section-7-12">The RS determines the key from the binding of the presented access token, and so the client MUST NOT include the <code>alg</code>, <code>keyid</code>, or <code>pub</code> signature parameters.<a href="#section-7-12" class="pilcrow">¶</a></p>
@@ -1713,25 +1728,22 @@ Signature: sig1=:uvIxaaJED8BxpYUL6cBd1v5uy24SptQnVQ35oKxWflg8GumiH77\
 <p id="section-8-1">In order for a request protected by an HTTP Message Signature bound access token to be considered valid, the RS MUST perform the following checks:<a href="#section-8-1" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-8-2.1">
-          <p id="section-8-2.1.1">The presented signature validates using the key bound to the token<a href="#section-8-2.1.1" class="pilcrow">¶</a></p>
+          <p id="section-8-2.1.1">The presented signature verifies against the signature base using the key bound to the token, under the HTTP_VERIFY primitive for that key's algorithm<a href="#section-8-2.1.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-8-2.2">
-          <p id="section-8-2.2.1">The signature validates using the HTTP_VERIFY algorithm associated with the key<a href="#section-8-2.2.1" class="pilcrow">¶</a></p>
+          <p id="section-8-2.2.1">The <code>created</code> value is not too far in the past (e.g. 30 seconds to account for clock skew and network delays)<a href="#section-8-2.2.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-8-2.3">
-          <p id="section-8-2.3.1">The <code>created</code> value is not too far in the past (e.g. 30 seconds to account for clock skew and network delays)<a href="#section-8-2.3.1" class="pilcrow">¶</a></p>
+          <p id="section-8-2.3.1">The <code>nonce</code> value has not been previously used within the time validity window of this request<a href="#section-8-2.3.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-8-2.4">
-          <p id="section-8-2.4.1">The <code>nonce</code> value has not been previously used within the time validity window of this request<a href="#section-8-2.4.1" class="pilcrow">¶</a></p>
+          <p id="section-8-2.4.1">The <code>tag</code> value is "httpsig-oauth"<a href="#section-8-2.4.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-8-2.5">
-          <p id="section-8-2.5.1">The <code>tag</code> value is "httpsig-oauth"<a href="#section-8-2.5.1" class="pilcrow">¶</a></p>
+          <p id="section-8-2.5.1">The covered components and parameters include all items enumerated in <a href="#presenting" class="auto internal xref">Section 7</a>, including the Authorization header field<a href="#section-8-2.5.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-8-2.6">
-          <p id="section-8-2.6.1">The covered components and parameters include all items enumerated in <a href="#presenting" class="auto internal xref">Section 7</a>, including the Authorization header field<a href="#section-8-2.6.1" class="pilcrow">¶</a></p>
-</li>
-        <li class="normal" id="section-8-2.7">
-          <p id="section-8-2.7.1">The <code>alg</code>, <code>keyid</code>, and <code>pub</code> parameters are not present<a href="#section-8-2.7.1" class="pilcrow">¶</a></p>
+          <p id="section-8-2.6.1">The <code>alg</code>, <code>keyid</code>, and <code>pub</code> parameters are not present<a href="#section-8-2.6.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 <p id="section-8-3">The last of these checks, and the corresponding checks in <a href="#issuing" class="auto internal xref">Section 6</a>, are required rather than optional: <span><a href="https://rfc-editor.org/rfc/rfc9421#section-3.2.1" class="relref">Section 3.2.1</a> of [<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span> allows an application to impose requirements beyond those of <span>[<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span>, but requires that it enforce them during verification and fail any signature that does not conform.<a href="#section-8-3" class="pilcrow">¶</a></p>
@@ -1749,12 +1761,12 @@ Authorization: HTTPSig 2340897.34j123-134uh2345n
 Signature-Input: sig1=("@method" "@target-uri" "authorization")\
   ;created=1776650875;nonce="k9Jyxempel2305Nmx7Rk"\
   ;tag="httpsig-oauth"
-Signature: sig1=:ZT/aeezwK0q2jRs58DR0D0ZTwVcBLuOy4UU/OTUaACWaCDASsFP\
-  o/wFysJ8AH8Sby4wSH3bAb55i0oVWFqmEBg==:
+Signature: sig1=:uvIxaaJED8BxpYUL6cBd1v5uy24SptQnVQ35oKxWflg8GumiH77\
+  60va6P2qWxadrLodjGmIFna3bS70KxYv7CQ==:
 </pre><a href="#section-8-7" class="pilcrow">¶</a>
 </div>
-<p id="section-8-8">The RS determines the key bound to the token (in this example, assume the RS introspects the token to get the key material). The RS determines the algorithm from the key material.<a href="#section-8-8" class="pilcrow">¶</a></p>
-<p id="section-8-9">In this example, the token is bound to the ECDSA P-256 key <code>test-key-ecdsa-p256</code>, giving the <code>ecdsa-p256-sha256</code> algorithm. The signature input string is:<a href="#section-8-9" class="pilcrow">¶</a></p>
+<p id="section-8-8">The RS determines the key bound to the token (in this example, assume the RS introspects the token to get the key material). The RS takes both the public key and the algorithm from the <code>htsk</code> confirmation associated with the token, as in <a href="#key-json" class="auto internal xref">Section 4.2</a>.<a href="#section-8-8" class="pilcrow">¶</a></p>
+<p id="section-8-9">In this example, the token is bound to the Ed25519 key the client presented in the token request in <a href="#request" class="auto internal xref">Section 2.4</a>, giving the <code>ed25519</code> algorithm. The signature input string is:<a href="#section-8-9" class="pilcrow">¶</a></p>
 <div class="alignLeft art-text artwork" id="section-8-10">
 <pre>
 NOTE: '\' line wrapping per RFC 8792
@@ -1805,7 +1817,7 @@ NOTE: '\' line wrapping per RFC 8792
           <p id="section-11-2.4.1">Failure to check derived attributes allows a signature to be replayed.<a href="#section-11-2.4.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-11-2.5">
-          <p id="section-11-2.5.1">Signatures could be replayed outside of their vailidty window if not checked.<a href="#section-11-2.5.1" class="pilcrow">¶</a></p>
+          <p id="section-11-2.5.1">Signatures could be replayed outside of their validity window if not checked.<a href="#section-11-2.5.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-11-2.6">
           <p id="section-11-2.6.1">An access token cannot be bound to a shared secret. Every party that validates a presented signature needs the key that produced it, and <span><a href="https://rfc-editor.org/rfc/rfc9421#section-7.3.3" class="relref">Section 7.3.3</a> of [<a href="#HTTPSIG" class="cite xref">HTTPSIG</a>]</span> notes that a verifier holding symmetric key material is thereby able to produce a valid signature of its own. Binding a token to a shared secret would let every RS that accepts it produce requests indistinguishable from the client's.<a href="#section-11-2.6.1" class="pilcrow">¶</a></p>
@@ -2090,6 +2102,22 @@ NOTE: '\' line wrapping per RFC 8792
 <div class="email">
 <span>Email:</span>
 <a href="mailto:paul.bastian@posteo.de" class="email">paul.bastian@posteo.de</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Filip Skokan</span></div>
+<div dir="auto" class="left"><span class="org">Okta</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:panva.ip@gmail.com" class="email">panva.ip@gmail.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Christian Bormann</span></div>
+<div dir="auto" class="left"><span class="org">SPRIND</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:chris.bormann@gmx.de" class="email">chris.bormann@gmx.de</a>
 </div>
 </address>
 </section>

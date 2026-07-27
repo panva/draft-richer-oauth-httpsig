@@ -8,6 +8,10 @@ Intended status: Standards Track                              A. Parecki
 Expires: 28 January 2027                                            Okta
                                                               P. Bastian
                                                          Bundesdruckerei
+                                                               F. Skokan
+                                                                    Okta
+                                                              C. Bormann
+                                                                  SPRIND
                                                             27 July 2026
 
 
@@ -165,6 +169,10 @@ Table of Contents
    Document ([I-D.ietf-oauth-client-id-metadata-document]), or via an
    out of band method.
 
+   [[ Editor's note: the values of httpsig_key_binding_method still need
+   defining.  The example below uses "preregistered" for Section 2.2,
+   and the method in Section 2.3 has no name yet. ]]
+
    [[ Editor's note: do we want to add an AS/RS metadata parameter to
    signal support for each type? ]]
 
@@ -201,6 +209,11 @@ Table of Contents
    as by using [DYNREG]), as long as the thumbprint is associated with
    the client's client_id before the token request is made.
 
+   [[ Editor's note: httpsig_bound_access_token_thumbprint should become
+   an array of thumbprints, so that a client can rotate keys and
+   register more than one.  The AS would then bind a token if the
+   presented key's thumbprint matches any registered value. ]]
+
 2.2.1.  Example Client Registration
 
    A client can publish the key binding parameters as part of a
@@ -213,7 +226,7 @@ Table of Contents
        "client_id": "https://client.example.com/client-metadata.json",
        "client_name": "Example Client",
        "httpsig_bound_access_token_thumbprint":
-           "ZfKrEwGZlbBaGH2QJnfjNCyBAO0Uz-8gPQXQOVojYzE",
+           "a3ugj_QpnJqJm_ixvE5t6zCEPkIq7fZAiZ63-O-kAcY",
        "httpsig_key_binding_method": "preregistered"
    }
 
@@ -415,6 +428,9 @@ Table of Contents
       thumbprint of the presented key does not match the client's
       registered httpsig_bound_access_token_thumbprint value
 
+   *  The Content-Digest field value does not match a digest computed
+      over the request body
+
    *  There is more than one signature with the tag "httpsig-oauth-
       token-request"
 
@@ -440,7 +456,7 @@ Table of Contents
    }
 
    The client MUST associate this returned access token with the key
-   used to make the requst.
+   used to make the request.
 
    The confirmation carries the key itself, in the JSON representation
    of Section 4.2, so that an RS can validate a presented signature
@@ -473,7 +489,7 @@ Table of Contents
 
 7.  Presenting an HTTP Message Signature Bound Access Token
 
-   HTTP Message Signature bound access token MUST be presented in an
+   An HTTP Message Signature bound access token MUST be presented in an
    HTTP Authorization field using the HTTPSig authorization scheme.
 
    Authorization: HTTPSig 2340897.34j123-134uh2345n
@@ -517,10 +533,10 @@ Table of Contents
       small number of seconds of issuance (e.g. 30 seconds to account
       for clock skew)
 
-   *  nonce a random unique value that the AS can use to prevent
+   *  nonce a random unique value that the RS can use to prevent
       signature replay within the small validity time window
 
-   *  tag a string indicating that this is being used for requesting a
+   *  tag a string indicating that this is being used for presenting a
       bound token, MUST be the value "httpsig-oauth"
 
    The RS determines the key from the binding of the presented access
@@ -548,10 +564,9 @@ Table of Contents
    access token to be considered valid, the RS MUST perform the
    following checks:
 
-   *  The presented signature validates using the key bound to the token
-
-   *  The signature validates using the HTTP_VERIFY algorithm associated
-      with the key
+   *  The presented signature verifies against the signature base using
+      the key bound to the token, under the HTTP_VERIFY primitive for
+      that key's algorithm
 
    *  The created value is not too far in the past (e.g. 30 seconds to
       account for clock skew and network delays)
@@ -589,16 +604,17 @@ Table of Contents
    Signature-Input: sig1=("@method" "@target-uri" "authorization")\
      ;created=1776650875;nonce="k9Jyxempel2305Nmx7Rk"\
      ;tag="httpsig-oauth"
-   Signature: sig1=:ZT/aeezwK0q2jRs58DR0D0ZTwVcBLuOy4UU/OTUaACWaCDASsFP\
-     o/wFysJ8AH8Sby4wSH3bAb55i0oVWFqmEBg==:
+   Signature: sig1=:uvIxaaJED8BxpYUL6cBd1v5uy24SptQnVQ35oKxWflg8GumiH77\
+     60va6P2qWxadrLodjGmIFna3bS70KxYv7CQ==:
 
    The RS determines the key bound to the token (in this example, assume
-   the RS introspects the token to get the key material).  The RS
-   determines the algorithm from the key material.
+   the RS introspects the token to get the key material).  The RS takes
+   both the public key and the algorithm from the htsk confirmation
+   associated with the token, as in Section 4.2.
 
-   In this example, the token is bound to the ECDSA P-256 key test-key-
-   ecdsa-p256, giving the ecdsa-p256-sha256 algorithm.  The signature
-   input string is:
+   In this example, the token is bound to the Ed25519 key the client
+   presented in the token request in Section 2.4, giving the ed25519
+   algorithm.  The signature input string is:
 
    NOTE: '\' line wrapping per RFC 8792
 
@@ -640,7 +656,7 @@ Table of Contents
    *  Failure to check derived attributes allows a signature to be
       replayed.
 
-   *  Signatures could be replayed outside of their vailidty window if
+   *  Signatures could be replayed outside of their validity window if
       not checked.
 
    *  An access token cannot be bound to a shared secret.  Every party
@@ -884,3 +900,13 @@ Authors' Addresses
    Paul Bastian
    Bundesdruckerei
    Email: paul.bastian@posteo.de
+
+
+   Filip Skokan
+   Okta
+   Email: panva.ip@gmail.com
+
+
+   Christian Bormann
+   SPRIND
+   Email: chris.bormann@gmx.de
