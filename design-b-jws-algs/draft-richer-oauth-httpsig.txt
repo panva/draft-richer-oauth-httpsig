@@ -8,6 +8,10 @@ Intended status: Standards Track                              A. Parecki
 Expires: 28 January 2027                                            Okta
                                                               P. Bastian
                                                          Bundesdruckerei
+                                                               F. Skokan
+                                                                    Okta
+                                                              C. Bormann
+                                                                  SPRIND
                                                             27 July 2026
 
 
@@ -929,3 +933,13 @@ Authors' Addresses
    Paul Bastian
    Bundesdruckerei
    Email: paul.bastian@posteo.de
+
+
+   Filip Skokan
+   Okta
+   Email: panva.ip@gmail.com
+
+
+   Christian Bormann
+   SPRIND
+   Email: chris.bormann@gmx.de
