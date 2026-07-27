@@ -784,9 +784,6 @@ Appendix A.  Document History
          JWK to a single pub signature parameter carrying the raw public
          key
 
-      -  Limited the inline key representation to ECDSA, Ed25519, and
-         ML-DSA
-
       -  Required the alg signature parameter for runtime key
          introduction
 
@@ -796,12 +793,9 @@ Appendix A.  Document History
       -  Required the bound key to be asymmetric, disallowing shared
          secrets
 
-      -  Required signature algorithms to come from the "HTTP Signature
-         Algorithms" registry, with no use of JOSE algorithm names
-
       -  Made the client present its key in the token request under both
-         binding methods, and reduced pre-registration to a single key
-         thumbprint
+         binding methods, and reduced pre-registration to a key
+         thumbprint rather than a value
 
       -  Defined the key thumbprint, the JSON key representation, and
          the htsk confirmation method
