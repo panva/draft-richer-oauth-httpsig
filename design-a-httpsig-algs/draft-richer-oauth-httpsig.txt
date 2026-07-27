@@ -217,11 +217,6 @@ Table of Contents
        "httpsig_key_binding_method": "preregistered"
    }
 
-   Note that the client's jwks and jwks_uri values play no part in this
-   binding.  A client can publish them for other purposes, such as
-   client authentication, without affecting the key bound to its access
-   tokens.
-
 2.3.  Token Request Key Introduction
 
    Instead of pre-registering a thumbprint, a client can introduce its
