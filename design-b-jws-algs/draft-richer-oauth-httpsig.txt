@@ -820,10 +820,7 @@ Appendix A.  Document History
          JWK to a single pub signature parameter carrying the raw public
          key
 
-      -  Limited the inline key representation to ECDSA, Ed25519, and
-         ML-DSA
-
-      -  Required the alg signature parameter for runtime key
+      -  Required the jws_alg signature parameter for runtime key
          introduction
 
       -  Removed keyid entirely; the key is presented to the AS and
@@ -836,11 +833,9 @@ Appendix A.  Document History
          throughout, using the JOSE algorithms of Section 3.3.7 of RFC
          9421 and dropping the alg signature parameter
 
-      -  Required fully specified algorithm identifiers, replacing EdDSA
-         with Ed25519 and Ed448
+      -  Required fully specified algorithm identifiers
 
-      -  Defined reconstruction of a JWK from a runtime-introduced key,
-         by key type rather than by individual algorithm
+      -  Defined reconstruction of a JWK from a runtime-introduced key
 
       -  Carried the bound key in the jwk confirmation method of RFC
          7800
