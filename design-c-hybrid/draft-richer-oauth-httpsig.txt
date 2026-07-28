@@ -5,14 +5,14 @@
 OAUTH                                                     J. Richer, Ed.
 Internet-Draft                                                   MongoDB
 Intended status: Standards Track                              A. Parecki
-Expires: 28 January 2027                                            Okta
+Expires: 29 January 2027                                            Okta
                                                               P. Bastian
                                                          Bundesdruckerei
                                                                F. Skokan
                                                                     Okta
                                                               C. Bormann
                                                                   SPRIND
-                                                            27 July 2026
+                                                            28 July 2026
 
 
      OAuth Proof of Possession Tokens with HTTP Message Signatures
@@ -50,7 +50,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 28 January 2027.
+   This Internet-Draft will expire on 29 January 2027.
 
 Copyright Notice
 
@@ -645,9 +645,9 @@ Table of Contents
    *  The presented signature validates using the key the token is bound
       to
 
-   *  For a jwk confirmation, the signature validates under the JWS
-      algorithm named by the JWK's alg member, applied as described in
-      Section 3.3.7 of [HTTPSIG]
+   *  For a jwk confirmation, the signature validates under the
+      HTTP_VERIFY application of the JWS algorithm named by the JWK's
+      alg member, applied as described in Section 3.3.7 of [HTTPSIG]
 
    *  For an htsk confirmation, the signature validates under the
       HTTP_VERIFY primitive of the named "HTTP Signature Algorithms"
